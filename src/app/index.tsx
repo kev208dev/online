@@ -69,10 +69,10 @@ export default function HomeScreen() {
           <Fade x={0} y={717 + dy} w={402} h={132} from="bottom" />
         </Pinned>
 
-        <StoreRowHit y={656} onPress={openStoreDetail} />
-        <StoreRowHit y={748} onPress={openStoreDetail} />
-        <DetailButton y={682} onPress={openStoreDetail} />
-        <DetailButton y={774} onPress={openStoreDetail} />
+        <StoreRowHit y={656} onPress={() => openStoreDetail('madeby')} />
+        <StoreRowHit y={748} onPress={() => openStoreDetail('dadareuda')} />
+        <DetailButton y={682} onPress={() => openStoreDetail('madeby')} />
+        <DetailButton y={774} onPress={() => openStoreDetail('dadareuda')} />
 
         <Label x={24} y={620} size={20} weight="Bold" color="#000000">
           기다리는 동안 이런 곳은 어때요?

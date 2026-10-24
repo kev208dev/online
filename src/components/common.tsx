@@ -1,6 +1,7 @@
 // Layers repeated across several Figma frames.
 import { router } from 'expo-router';
 
+import type { StoreId } from '../data/stores';
 import { icons } from '../design/assets';
 import { Box, Hit, Icon, Label, ORANGE } from '../design/canvas';
 
@@ -39,6 +40,6 @@ export function BackHeader({ title, shadow }: { title: string; shadow: [offsetY:
   );
 }
 
-export function openStoreDetail() {
-  router.push('/search/detail');
+export function openStoreDetail(id: StoreId) {
+  router.push({ pathname: '/search/detail', params: { id } });
 }

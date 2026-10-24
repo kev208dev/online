@@ -5,11 +5,14 @@ import { View } from 'react-native';
 import { DetailButton, openStoreDetail, StoreRowHit } from '../../components/common';
 import { icons, images } from '../../design/assets';
 import { Box, Fade, Icon, Label, ORANGE, Photo, useViewport } from '../../design/canvas';
+import { PanMap } from '../../design/map';
 import { Pinned, ScrollCanvas } from '../../design/scroll';
 import { useWaiting } from '../../state/waiting';
 
 const GREY_40 = 'rgba(0,0,0,0.4)';
 const MAP_CROP = { w: 1.76, h: 1.355, left: -0.3646, top: -0.354 };
+// The big pin's tip in map.png pixels; at rest the pin sits at (142, 116) as in 17-1.
+const SUNGSIMDANG_ON_MAP = { x: 648.6, y: 761.8 };
 
 export default function SearchScreen() {
   const { dy } = useViewport();
@@ -18,7 +21,15 @@ export default function SearchScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
       <ScrollCanvas height={874}>
-        <Photo x={0} y={-12} w={402} h={489} source={images.map} crop={MAP_CROP} />
+        <PanMap
+          x={0}
+          y={-12}
+          w={402}
+          h={489}
+          source={images.map}
+          crop={MAP_CROP}
+          pins={[{ svg: icons.mapPinBig, w: 43, h: 63.0667, at: SUNGSIMDANG_ON_MAP }]}
+        />
         <Box x={0} y={360} w={402} h={489} bg="#ffffff" radius={30} shadow={[-2, 15, 'rgba(0,0,0,0.1)']} />
         <Label x={132} y={760} size={16} weight="Regular" color="rgba(0,0,0,0.7)" underline>
           주변 가게 더 찾아보기
@@ -29,7 +40,6 @@ export default function SearchScreen() {
           은행동
         </Label>
         <Icon svg={icons.pinSmall} x={34} y={70} w={10} h={14.6667} />
-        <Icon svg={icons.mapPinBig} x={142} y={116} w={43} h={63.0667} />
         <Icon svg={icons.chevronDown} x={96.9} y={76.9} w={10.2} h={5.2} />
 
         <Label x={24} y={536} size={20} weight="Bold" color="#000000">
@@ -70,10 +80,10 @@ export default function SearchScreen() {
         </Label>
         <Photo x={24} y={572} w={80} h={80} radius={7} border={[1, '#5e5e5e']} source={images.madeby} />
         <Photo x={24} y={664} w={80} h={80} radius={7} border={[1, '#5e5e5e']} source={images.dadareuda} />
-        <StoreRowHit y={572} onPress={openStoreDetail} />
-        <StoreRowHit y={664} onPress={openStoreDetail} />
-        <DetailButton y={598} onPress={openStoreDetail} />
-        <DetailButton y={690} onPress={openStoreDetail} />
+        <StoreRowHit y={572} onPress={() => openStoreDetail('madeby')} />
+        <StoreRowHit y={664} onPress={() => openStoreDetail('dadareuda')} />
+        <DetailButton y={598} onPress={() => openStoreDetail('madeby')} />
+        <DetailButton y={690} onPress={() => openStoreDetail('dadareuda')} />
 
         {/* Tap area for "주변 가게 더 찾아보기". */}
         <Box x={124} y={752} w={153} h={35} onPress={() => router.push('/search/nearby')} />

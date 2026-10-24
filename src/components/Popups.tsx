@@ -103,7 +103,7 @@ export function EntryQrPopup() {
 const COUPON_SECONDS = 4 * 60 + 59;
 
 /** Mount it when the coupon is issued; the expiry countdown starts then. */
-export function CouponPopup({ onDismiss }: { onDismiss: () => void }) {
+export function CouponPopup({ line, onDismiss }: { line: string; onDismiss: () => void }) {
   const [left, setLeft] = useState(COUPON_SECONDS);
 
   useEffect(() => {
@@ -129,7 +129,7 @@ export function CouponPopup({ onDismiss }: { onDismiss: () => void }) {
         새로고침
       </Label>
       <Label cx={202 - CARD_X} y={351 - top} size={16} weight="SemiBold" color="rgba(0,0,0,0.7)">
-        10,000원 이상 구매 시 15% 할인
+        {line}
       </Label>
       <Label x={156 - CARD_X} y={571.42 - top} size={12} weight="Regular" color="rgba(0,0,0,0.5)">
         {'만료까지 '}
