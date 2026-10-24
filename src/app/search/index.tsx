@@ -2,7 +2,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { DetailButton, openStoreDetail } from '../../components/common';
+import { DetailButton, openStoreDetail, StoreRowHit } from '../../components/common';
 import { icons, images } from '../../design/assets';
 import { Box, Fade, Icon, Label, ORANGE, Photo, useViewport } from '../../design/canvas';
 import { Pinned, ScrollCanvas } from '../../design/scroll';
@@ -70,6 +70,8 @@ export default function SearchScreen() {
         </Label>
         <Photo x={24} y={572} w={80} h={80} radius={7} border={[1, '#5e5e5e']} source={images.madeby} />
         <Photo x={24} y={664} w={80} h={80} radius={7} border={[1, '#5e5e5e']} source={images.dadareuda} />
+        <StoreRowHit y={572} onPress={openStoreDetail} />
+        <StoreRowHit y={664} onPress={openStoreDetail} />
         <DetailButton y={598} onPress={openStoreDetail} />
         <DetailButton y={690} onPress={openStoreDetail} />
 

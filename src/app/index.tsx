@@ -1,7 +1,7 @@
 // 홈 — Figma "iPhone 17 - 4"
 import { View } from 'react-native';
 
-import { DetailButton, openStoreDetail } from '../components/common';
+import { DetailButton, openStoreDetail, StoreRowHit } from '../components/common';
 import { BigNumbers, positionParts, waitParts } from '../components/WaitTime';
 import { icons, images } from '../design/assets';
 import { Box, Fade, Icon, Label, ORANGE, Photo, Span, useViewport } from '../design/canvas';
@@ -69,6 +69,8 @@ export default function HomeScreen() {
           <Fade x={0} y={717 + dy} w={402} h={132} from="bottom" />
         </Pinned>
 
+        <StoreRowHit y={656} onPress={openStoreDetail} />
+        <StoreRowHit y={748} onPress={openStoreDetail} />
         <DetailButton y={682} onPress={openStoreDetail} />
         <DetailButton y={774} onPress={openStoreDetail} />
 

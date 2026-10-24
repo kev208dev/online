@@ -120,38 +120,46 @@ type LabelProps = {
   children: ReactNode;
 };
 
-/** A text layer with Figma's "auto" (normal) line height. */
+/**
+ * A text layer with Figma's "auto" (normal) line height.
+ *
+ * Text layers often sit on top of buttons (e.g. "상세 보기"), so they must not
+ * catch taps. Android ignores `pointerEvents` on Text itself, so the text is
+ * wrapped in a View that has it.
+ */
 export function Label({ x, cx, rx, y, size, weight, color, underline, style, children }: LabelProps) {
   const s = useScale();
   const wide = DESIGN_WIDTH * s;
-  let position: TextStyle;
+  let position: ViewStyle;
+  let textAlign: TextStyle['textAlign'];
   if (cx !== undefined) {
-    position = { left: cx * s - wide / 2, width: wide, textAlign: 'center' };
+    position = { left: cx * s - wide / 2, width: wide };
+    textAlign = 'center';
   } else if (rx !== undefined) {
-    position = { right: (DESIGN_WIDTH - rx) * s, width: wide, textAlign: 'right' };
+    position = { right: (DESIGN_WIDTH - rx) * s, width: wide };
+    textAlign = 'right';
   } else {
     position = { left: (x ?? 0) * s };
   }
   return (
-    <Text
-      allowFontScaling={false}
-      pointerEvents="none"
-      style={[
-        {
-          position: 'absolute',
-          top: y * s,
-          fontFamily: font(weight),
-          fontSize: size * s,
-          color,
-          includeFontPadding: false,
-        },
-        underline && underlineStyle,
-        position,
-        style,
-      ]}
-    >
-      {children}
-    </Text>
+    <View pointerEvents="none" style={[{ position: 'absolute', top: y * s }, position]}>
+      <Text
+        allowFontScaling={false}
+        style={[
+          {
+            fontFamily: font(weight),
+            fontSize: size * s,
+            color,
+            includeFontPadding: false,
+            textAlign,
+          },
+          underline && underlineStyle,
+          style,
+        ]}
+      >
+        {children}
+      </Text>
+    </View>
   );
 }
 

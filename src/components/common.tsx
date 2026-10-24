@@ -16,6 +16,15 @@ export function DetailButton({ y, onPress }: { y: number; onPress: () => void })
   );
 }
 
+/**
+ * Tap area over a whole 80px store row (thumbnail, name and info), so the
+ * row opens the same screen as its "상세 보기" button. Render it before the
+ * button so the button stays on top.
+ */
+export function StoreRowHit({ y, onPress }: { y: number; onPress: () => void }) {
+  return <Hit x={24} y={y} w={354} h={80} onPress={onPress} />;
+}
+
 /** White top bar with a back arrow and title (17-5, 17-8). */
 export function BackHeader({ title, shadow }: { title: string; shadow: [offsetY: number, color: string] }) {
   return (

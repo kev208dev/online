@@ -1,4 +1,5 @@
 import { useFonts } from 'expo-font';
+import { NavigationBar } from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
@@ -21,6 +22,8 @@ export default function RootLayout() {
     <WaitingProvider>
       <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
         <StatusBar style="dark" />
+        {/* The Figma frames have no Android navigation bar; swipe up to reveal it. */}
+        <NavigationBar hidden />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#ffffff' } }}>
           <Stack.Screen name="index" />
           {/* 홈 ↔ 검색 is a tab switch, so it does not slide. */}
