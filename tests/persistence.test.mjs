@@ -25,7 +25,10 @@ test('v1 timed wait does not revive as a queue and old coupon history expires', 
     state: {
       wait: { id: 'WAIT-OLD', startedAt: now - 1_000, endsAt: now + 3_600_000, leaveAllowed: true },
       stops: ['madeby'], visited: [], currentStoreId: 'madeby',
-      coupons: [{ code: 'OLD', storeId: 'madeby', waitId: 'WAIT-OLD', title: '옛 혜택', condition: '옛 조건', issuedAt: now - 1_000, expiresAt: now + 3_600_000 }],
+      coupons: [
+        { code: 'OLD', storeId: 'madeby', waitId: 'WAIT-OLD', title: '옛 혜택', condition: '옛 조건', issuedAt: now - 1_000, expiresAt: now + 3_600_000 },
+        { code: 'USED', storeId: 'madeby', waitId: 'WAIT-OLD', title: '옛 혜택', condition: '옛 조건', issuedAt: now - 2_000, expiresAt: now + 3_600_000, usedAt: now - 1_000 },
+      ],
       offers: { madeby: { title: '편집한 혜택', condition: '편집 조건', enabled: true } },
       profiles: { madeby: { menu: '수정 메뉴', hours: '11-20', address: '수정 주소' } },
       alertsEnabled: true,
@@ -37,6 +40,11 @@ test('v1 timed wait does not revive as a queue and old coupon history expires', 
   assert.equal(state.wait, null);
   assert.deepEqual(state.stops, []);
   assert.equal(state.coupons[0].expiresAt, now);
+  assert.equal(state.commerce.coupons[0].code, 'OLD');
+  assert.equal(state.commerce.coupons[0].expiresAt, now);
+  assert.match(state.commerce.coupons[0].condition, /실제 할인 없음/);
+  assert.equal(state.commerce.coupons[1].code, 'USED');
+  assert.equal(state.commerce.coupons[1].usedAt, now - 1_000);
   assert.equal(state.offers.madeby.title, '편집한 혜택');
   assert.equal(state.profiles.madeby.menu, '수정 메뉴');
 });
@@ -53,10 +61,10 @@ test('v2 round trip preserves selected and registered branches plus independent 
   const loaded = await local.load();
   assert.equal(loaded.queue.selectedBranchId, 'dcc');
   assert.equal(loaded.queue.wait.branchId, 'main');
-  assert.equal(loaded.queue.wait.ticketNumber, 13);
+  assert.equal(loaded.queue.wait.ticketNumber, 1);
   assert.equal(loaded.queue.wait.peopleAhead, 12);
   assert.equal(loaded.queue.queueCounts.main, 1);
-  assert.equal(loaded.queue.nextTicketNumbers.main, 14);
+  assert.equal(loaded.queue.nextTicketNumbers.main, 2);
 });
 
 test('repository serializes consecutive saves so the newest state wins', async () => {

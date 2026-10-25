@@ -24,7 +24,7 @@ export default function RootLayout() {
         {/* The Figma frames have no Android navigation bar; swipe up to reveal it. */}
         <NavigationBar hidden />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#ffffff' } }}>
-          <Stack.Screen name="index" />
+          <Stack.Screen name="index" options={{ animation: 'none' }} />
           {/* 홈 ↔ 검색 is a tab switch, so it does not slide. */}
           <Stack.Screen name="search/index" options={{ animation: 'none' }} />
           <Stack.Screen name="search/nearby" />

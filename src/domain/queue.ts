@@ -45,15 +45,9 @@ export function selectBranch(state: QueueState, branchId: BranchId): QueueState 
 export function setQueueCount(state: QueueState, branchId: BranchId, count: number): QueueState {
   if (!validBranch(branchId)) throw new Error('지점을 찾을 수 없어요');
   if (!Number.isSafeInteger(count) || count < 0) throw new Error('대기 인원은 0명 이상의 정수여야 해요');
-  // The first manager-entered count represents people who joined before this
-  // device began issuing tickets. Later edits never rewrite ticket history.
-  const initialSeed = state.nextTicketNumbers[branchId] === 1;
   return {
     ...state,
     queueCounts: { ...state.queueCounts, [branchId]: count },
-    nextTicketNumbers: initialSeed
-      ? { ...state.nextTicketNumbers, [branchId]: Math.max(1, count + 1) }
-      : state.nextTicketNumbers,
   };
 }
 

@@ -79,6 +79,22 @@ export function restoreAppState(raw: string | null, now = Date.now()): AppState 
     const oldVersion = parsed.version === 1;
     const coupons = Array.isArray(saved.coupons) ? saved.coupons.map((coupon: DemoState['coupons'][number]) => oldVersion && coupon?.usedAt === undefined
       ? { ...coupon, expiresAt: Math.min(nonNegative(coupon?.expiresAt, now), now) } : coupon) : [];
+    const commerce = oldVersion ? createCommerceState() : restoreCommerce(saved.commerce);
+    const existingCodes = new Set(commerce.coupons.map((coupon) => coupon.code));
+    const previousCoupons = coupons.flatMap((coupon: DemoState['coupons'][number]) => {
+      if (!coupon || !STORE_KEYS.includes(coupon.storeId) || typeof coupon.code !== 'string' || !coupon.code
+        || typeof coupon.waitId !== 'string' || existingCodes.has(coupon.code)) return [];
+      const usedAt = nonNegative(coupon.usedAt, -1);
+      const expiry = nonNegative(coupon.expiresAt, now);
+      existingCodes.add(coupon.code);
+      return [{
+        code: coupon.code, storeId: coupon.storeId, waitId: coupon.waitId,
+        title: '이전 체험 쿠폰', condition: '이전 앱 내 기록 · 실제 할인 없음',
+        issuedAt: nonNegative(coupon.issuedAt, now),
+        expiresAt: usedAt >= 0 ? expiry : Math.min(expiry, now),
+        ...(usedAt >= 0 ? { usedAt } : {}),
+      }];
+    });
     const stops = oldVersion ? [] : Array.isArray(saved.stops) ? saved.stops.filter((id: unknown) => STORE_KEYS.includes(id as DemoState['stops'][number])) : [];
     return {
       ...initial,
@@ -90,7 +106,7 @@ export function restoreAppState(raw: string | null, now = Date.now()): AppState 
       visited: oldVersion ? [] : Array.isArray(saved.visited) ? saved.visited.filter((id: unknown) => stops.includes(id)) : [],
       currentStoreId: oldVersion ? null : stops.includes(saved.currentStoreId) ? saved.currentStoreId : null,
       queue: oldVersion ? createQueueState() : restoreQueue(saved.queue),
-      commerce: oldVersion ? createCommerceState() : restoreCommerce(saved.commerce),
+      commerce: { ...commerce, coupons: [...commerce.coupons, ...previousCoupons] },
     };
   } catch {
     return initial;

@@ -17,31 +17,33 @@ test('new device keeps four branch counts and ticket counters separate', async (
   assert.equal(state.wait, null);
 });
 
-test('first managed count seeds the next ticket and joining stores people ahead', async () => {
+test('manual total never changes the next ticket and joining stores people ahead', async () => {
   const { createQueueState, setQueueCount, joinQueue } = await queueDomain();
   const counted = setQueueCount(createQueueState(), 'main', 12);
-  const joined = joinQueue(counted, 'main', true, 'ENTRY-13', now);
+  assert.equal(counted.nextTicketNumbers.main, 1);
+  const joined = joinQueue(counted, 'main', true, 'ENTRY-1', now);
   assert.equal(joined.reason, undefined);
-  assert.equal(joined.state.wait.ticketNumber, 13);
+  assert.equal(joined.state.wait.ticketNumber, 1);
   assert.equal(joined.state.wait.peopleAhead, 12);
   assert.equal(joined.state.queueCounts.main, 13);
-  assert.equal(joined.state.nextTicketNumbers.main, 14);
+  assert.equal(joined.state.nextTicketNumbers.main, 2);
   assert.equal(joined.state.nextTicketNumbers.station, 1);
 });
 
 test('manual total below ticket number never rewrites ticket, ahead, or next number', async () => {
-  const { createQueueState, setQueueCount, joinQueue } = await queueDomain();
-  const joined = joinQueue(setQueueCount(createQueueState(), 'main', 12), 'main', true, 'ENTRY-13', now).state;
+  const { createQueueState, setQueueCount, joinQueue, cancelQueue } = await queueDomain();
+  const first = joinQueue(setQueueCount(createQueueState(), 'main', 12), 'main', true, 'ENTRY-1', now).state;
+  const joined = joinQueue(cancelQueue(first, now + 1), 'main', true, 'ENTRY-2', now + 2).state;
   const edited = setQueueCount(joined, 'main', 1);
   assert.equal(edited.queueCounts.main, 1);
-  assert.equal(edited.wait.ticketNumber, 13);
+  assert.equal(edited.wait.ticketNumber, 2);
   assert.equal(edited.wait.peopleAhead, 12);
-  assert.equal(edited.nextTicketNumbers.main, 14);
+  assert.equal(edited.nextTicketNumbers.main, 3);
 });
 
 test('processing a person ahead works even after total was manually lowered to zero', async () => {
   const { createQueueState, setQueueCount, joinQueue, processAhead } = await queueDomain();
-  let state = joinQueue(setQueueCount(createQueueState(), 'main', 2), 'main', true, 'ENTRY-3', now).state;
+  let state = joinQueue(setQueueCount(createQueueState(), 'main', 2), 'main', true, 'ENTRY-1', now).state;
   state = setQueueCount(state, 'main', 0);
   state = processAhead(state, 'main');
   assert.equal(state.wait.peopleAhead, 1);

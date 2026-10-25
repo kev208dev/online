@@ -4,8 +4,8 @@ import { Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } 
 import { useTabBarMetrics } from '../components/tabBarMetrics';
 import { Button, Chip, SectionTitle, StoreCard, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
-import { storesForBranch } from '../data/stores';
 import { BRANCH_IDS } from '../domain/queue';
+import { homeView } from '../domain/homeView';
 import { images } from '../design/assets';
 import { useDemo } from '../state/demo';
 
@@ -22,12 +22,12 @@ export default function HomeScreen() {
   const [message, setMessage] = useState('');
   const { width } = useWindowDimensions();
   const tab = useTabBarMetrics();
-  const selectedId = state.queue.selectedBranchId;
+  const overview = homeView(state.queue);
+  const selectedId = overview.selectedBranchId;
   const wait = state.queue.wait;
-  const active = wait?.status === 'waiting' ? wait : null;
+  const active = overview.activeWait;
   const branch = BRANCHES[active?.branchId ?? selectedId];
-  const nearbyBranchId = active?.branchId ?? selectedId;
-  const shops = storesForBranch(nearbyBranchId);
+  const shops = overview.stores;
 
   return <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ paddingBottom: tab.height + tab.bottom + 36 }}>
     <View style={{ width, height: Math.min(360, width * 0.9), backgroundColor: '#f4ede5' }}>
@@ -49,8 +49,8 @@ export default function HomeScreen() {
           <Text style={{ color: UI.muted, fontSize: 12 }}>{active ? `${branch.name} · 앞에 ${active.peopleAhead}명` : '줄서기 전'}</Text>
         </View>
         <View style={{ flex: 1, paddingLeft: 18 }}>
-          <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 17 }}>현재 대기 인원</Text>
-          <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 35 }}>{state.queue.queueCounts[active?.branchId ?? selectedId]}명</Text>
+          <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 17 }}>선택 지점 대기 인원</Text>
+          <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 35 }}>{overview.queueCount}명</Text>
           <Text style={{ color: UI.muted, fontSize: 12 }}>앱 내 관리 기준</Text>
         </View>
       </View>
