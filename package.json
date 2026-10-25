@@ -42,7 +42,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "demo:server": "node --experimental-strip-types server/cli.mjs start"
   },
   "private": true
 }
