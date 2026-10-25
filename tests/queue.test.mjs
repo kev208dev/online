@@ -64,6 +64,20 @@ test('changing selected branch leaves actual registration untouched', async () =
   assert.equal(selected.queueCounts.dcc, 0);
 });
 
+test('search joins the selected branch but cannot replace an active registration', async () => {
+  const { createQueueState, joinSelectedQueue, selectBranch } = await queueDomain();
+  const selected = selectBranch(createQueueState(), 'dcc');
+  const joined = joinSelectedQueue(selected, false, 'ENTRY-DCC', now);
+  assert.equal(joined.reason, undefined);
+  assert.equal(joined.state.wait.branchId, 'dcc');
+  assert.equal(joined.state.wait.leaveAllowed, false);
+  assert.equal(joined.state.nextTicketNumbers.dcc, 2);
+  const anotherSelected = selectBranch(joined.state, 'station');
+  const duplicate = joinSelectedQueue(anotherSelected, true, 'ENTRY-STATION', now + 1);
+  assert.match(duplicate.reason, /이미 줄서기 중/);
+  assert.equal(duplicate.state.wait.branchId, 'dcc');
+});
+
 test('active registration cannot be duplicated and cancelled ticket is never reused', async () => {
   const { createQueueState, joinQueue, cancelQueue } = await queueDomain();
   const first = joinQueue(createQueueState(), 'main', true, 'ENTRY-1', now).state;

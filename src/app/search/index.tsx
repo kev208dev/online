@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DemoMap } from '../../components/DemoMap';
-import { Chip, SectionTitle, StoreCard, UI } from '../../components/ui';
+import { Button, Chip, SectionTitle, StoreCard, UI } from '../../components/ui';
 import { useTabBarMetrics } from '../../components/tabBarMetrics';
 import { BRANCHES } from '../../data/branches';
 import { storesForBranch } from '../../data/stores';
@@ -10,11 +11,14 @@ import { BRANCH_IDS } from '../../domain/queue';
 import { useDemo } from '../../state/demo';
 
 export default function SearchScreen() {
-  const { state, selectBranch } = useDemo();
+  const { state, selectBranch, joinSelected } = useDemo();
+  const [leaveAllowed, setLeaveAllowed] = useState(false);
+  const [message, setMessage] = useState('');
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const tab = useTabBarMetrics();
   const branchId = state.queue.selectedBranchId;
+  const active = state.queue.wait?.status === 'waiting' ? state.queue.wait : null;
   const wait = state.queue.wait?.status === 'waiting' && state.queue.wait.branchId === branchId ? state.queue.wait : null;
   const rows = storesForBranch(branchId);
   const mapHeight = Math.max(290, Math.min(430, height * 0.44));
@@ -26,8 +30,16 @@ export default function SearchScreen() {
       <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 19 }}>{wait ? '현재 웨이팅 중이에요' : '주변 가게를 둘러보세요'}</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[branchId].name} · {wait ? `앞에 ${wait.peopleAhead}명` : `${state.queue.queueCounts[branchId]}명 대기`}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }} style={{ flexGrow: 0 }}>
-        {BRANCH_IDS.map((id) => <Chip key={id} label={BRANCHES[id].name.replace('성심당 ', '')} selected={branchId === id} onPress={() => selectBranch(id)} />)}
+        {BRANCH_IDS.map((id) => <Chip key={id} label={BRANCHES[id].name.replace('성심당 ', '')} selected={branchId === id} onPress={() => { selectBranch(id); setMessage(''); }} />)}
       </ScrollView>
+      {active ? <View style={{ gap: 8 }}>
+        {active.branchId !== branchId && <Text style={{ color: UI.muted, fontSize: 12 }}>현재 {BRANCHES[active.branchId].name}에 줄서기 중이에요.</Text>}
+        <Button label="내 줄서기 보기" secondary onPress={() => router.dismissTo('/')} />
+      </View> : <View style={{ gap: 8 }}>
+        <Pressable onPress={() => setLeaveAllowed(!leaveAllowed)} accessibilityRole="checkbox" accessibilityState={{ checked: leaveAllowed }} style={{ paddingVertical: 4 }}><Text style={{ color: UI.ink, fontSize: 13 }}>{leaveAllowed ? '☑' : '☐'} 현장에서 대기줄 이탈 가능 여부를 확인했어요</Text></Pressable>
+        <Button label={`${BRANCHES[branchId].name} 줄서기`} onPress={() => setMessage(joinSelected(leaveAllowed) ?? '줄서기를 시작했어요')} />
+      </View>}
+      {!!message && <Text style={{ color: UI.orange, fontSize: 13 }}>{message}</Text>}
       <SectionTitle>기다리는 동안 이런 곳은 어때요?</SectionTitle>
       {rows.slice(0, 2).map((store) => <StoreCard key={store.id} id={store.id} />)}
       <Text onPress={() => router.push('/search/nearby')} style={{ color: UI.muted, textDecorationLine: 'underline', textAlign: 'center', paddingVertical: 12 }}>주변 가게 더 찾아보기</Text>

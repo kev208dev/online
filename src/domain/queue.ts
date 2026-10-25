@@ -87,6 +87,10 @@ export function joinQueue(
   };
 }
 
+export function joinSelectedQueue(state: QueueState, leaveAllowed: boolean, entryCode: string, now = Date.now()): QueueChange {
+  return joinQueue(state, state.selectedBranchId, leaveAllowed, entryCode, now);
+}
+
 export function processAhead(state: QueueState, branchId: BranchId): QueueState {
   if (!validBranch(branchId)) throw new Error('지점을 찾을 수 없어요');
   const wait = state.wait?.status === 'waiting' && state.wait.branchId === branchId ? state.wait : null;

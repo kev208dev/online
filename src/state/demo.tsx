@@ -8,7 +8,7 @@ import {
   updateProfile, type Change, type StoreKey, type StoreProfile,
 } from '../domain/demo';
 import {
-  cancelQueue, joinQueue, processAhead, selectBranch, setQueueCount, verifyEntry,
+  cancelQueue, joinQueue, joinSelectedQueue, processAhead, selectBranch, setQueueCount, verifyEntry,
   type BranchId,
 } from '../domain/queue';
 import {
@@ -32,6 +32,7 @@ type Api = {
   unlockAdmin: (pin: string) => Promise<string | undefined>;
   lockAdmin: () => void;
   join: (branchId: BranchId, leaveAllowed: boolean) => string | undefined;
+  joinSelected: (leaveAllowed: boolean) => string | undefined;
   selectBranch: (branchId: BranchId) => void;
   setCount: (branchId: BranchId, count: number) => string | undefined;
   advance: (branchId: BranchId) => string | undefined;
@@ -106,6 +107,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, []);
   const join = useCallback((branchId: BranchId, leaveAllowed: boolean) => {
     const result = joinQueue(live.current.queue, branchId, leaveAllowed, `ONLINE-ENTRY-${randomUUID()}`);
+    if (!result.reason) replace({ ...live.current, queue: result.state });
+    return result.reason;
+  }, [replace]);
+  const joinSelected = useCallback((leaveAllowed: boolean) => {
+    const result = joinSelectedQueue(live.current.queue, leaveAllowed, `ONLINE-ENTRY-${randomUUID()}`);
     if (!result.reason) replace({ ...live.current, queue: result.state });
     return result.reason;
   }, [replace]);
@@ -187,7 +193,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [replace]);
   const alerts = useCallback((enabled: boolean) => replace({ ...live.current, alertsEnabled: enabled }), [replace]);
   const reset = useCallback(() => { if (adminGate.unlocked) replace(createAppState()); }, [replace]);
-  return <Context.Provider value={{ state, now, ready, admin, setAdminPin, unlockAdmin, lockAdmin, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, visitLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
+  return <Context.Provider value={{ state, now, ready, admin, setAdminPin, unlockAdmin, lockAdmin, join, joinSelected, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, visitLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
 }
 export function useDemo() {
   const value = useContext(Context);
