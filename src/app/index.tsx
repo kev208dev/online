@@ -1,46 +1,68 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
-import { Button, Card, Chip, Field, formatTime, Notice, Screen, SectionTitle, StoreCard, UI } from '../components/ui';
-import { eligibleStores, reminderAt, returnGuidance, waitRemaining } from '../domain/demo';
+import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { useTabBarMetrics } from '../components/tabBarMetrics';
+import { Button, Chip, SectionTitle, StoreCard, UI } from '../components/ui';
+import { BRANCHES } from '../data/branches';
+import { storesForBranch } from '../data/stores';
+import { BRANCH_IDS } from '../domain/queue';
 import { images } from '../design/assets';
 import { useDemo } from '../state/demo';
 
 export default function HomeScreen() {
-  const { state, now, ready, start, finish } = useDemo();
-  const [minutes, setMinutes] = useState('60');
+  const { state, join, selectBranch, cancel } = useDemo();
   const [leaveAllowed, setLeaveAllowed] = useState(false);
   const [message, setMessage] = useState('');
-  const left = waitRemaining(state, now);
-  const guidance = returnGuidance(state, now);
-  const departure = reminderAt(state);
-  const recommendations = eligibleStores(state, now);
-  if (!ready) return <Screen title="ONLINE"><Text>시연 데이터를 불러오는 중이에요.</Text></Screen>;
-  return <Screen title="기다림이 동네의 기회로" subtitle="성심당 본점 대기 중 은행동의 가게를 발견해 보세요.">
-    <Image source={images.sungsimdang} style={{ width: '100%', height: 230, borderRadius: 22 }} resizeMode="cover" />
-    {!state.wait ? <Card>
-      <SectionTitle>대기시간 기록 시작</SectionTitle>
-      <Text style={{ color: UI.muted, lineHeight: 21 }}>앵커 매장 · 성심당 본점{'\n'}대전 중구 대종로480번길 15</Text>
-      <Text style={{ color: UI.ink }}>예상 대기시간</Text>
-      <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-        {[30, 60, 90, 120].map((value) => <Chip key={value} label={`${value}분`} selected={minutes === String(value)} onPress={() => setMinutes(String(value))} />)}
+  const { width } = useWindowDimensions();
+  const tab = useTabBarMetrics();
+  const selectedId = state.queue.selectedBranchId;
+  const wait = state.queue.wait;
+  const active = wait?.status === 'waiting' ? wait : null;
+  const branch = BRANCHES[active?.branchId ?? selectedId];
+  const nearbyBranchId = active?.branchId ?? selectedId;
+  const shops = storesForBranch(nearbyBranchId);
+
+  return <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ paddingBottom: tab.height + tab.bottom + 36 }}>
+    <View style={{ width, height: Math.min(360, width * 0.9), backgroundColor: '#f4ede5' }}>
+      <Image source={selectedId === 'main' ? images.sungsimdang : images.map} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+      <Text style={{ position: 'absolute', right: 18, bottom: 16, color: '#fff', backgroundColor: UI.orange, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, fontSize: 12 }}>체험용</Text>
+    </View>
+    <View style={{ paddingHorizontal: 24, paddingTop: 17, gap: 15 }}>
+      <View style={{ gap: 4 }}>
+        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 19 }}>{BRANCHES[selectedId].name}</Text>
+        <Text style={{ color: UI.muted, fontSize: 13 }}>📍 {BRANCHES[selectedId].address}</Text>
       </View>
-      <Field value={minutes} onChangeText={setMinutes} placeholder="예상 대기시간(분)" keyboardType="number-pad" />
-      <Pressable onPress={() => setLeaveAllowed(!leaveAllowed)} accessibilityRole="checkbox" accessibilityState={{ checked: leaveAllowed }} style={{ paddingVertical: 8 }}><Text style={{ color: UI.ink, lineHeight: 22 }}>{leaveAllowed ? '☑' : '☐'} 이 매장은 줄을 떠나도 되는지 확인했어요</Text></Pressable>
-      <Notice text="실제 웨이팅 접수가 아닙니다. 예상시간은 직접 입력한 값이며, 매장 운영 방침을 현장에서 확인해 주세요." />
-      <Button label="대기시간 기록 시작" onPress={() => { const reason = start(Number(minutes), leaveAllowed); if (reason) setMessage(reason); else setMessage(''); }} />
-      {!!message && <Text style={{ color: '#b42318' }}>{message}</Text>}
-    </Card> : <Card>
-      <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>성심당 본점 · 수동 대기 기록</Text>
-      <Text style={{ fontFamily: 'Pretendard-Bold', fontSize: 38, color: UI.ink }}>{left > 0 ? `${left}분 남음` : '예상시간 경과'}</Text>
-      <Text style={{ color: UI.muted }}>예상 종료 {formatTime(state.wait.endsAt)}</Text>
-      {guidance === 'expired' ? <Notice text="예상 대기시간이 지났어요. 입장이 확정된 것은 아니니 매장에서 현재 순서를 확인해 주세요." /> : !state.wait.leaveAllowed ? <Notice text="줄을 떠나면 순번을 잃을 수 있어요. 현장에서 대기해 주세요." /> : guidance === 'return-now' ? <Notice text="지금 성심당 본점으로 돌아가세요. 직접 입력한 예상시간에 따른 안내입니다." /> : <Notice text={`복귀 여유 5분을 포함해 방문할 곳을 추천해요. 현재 일정 ${state.stops.length}곳. ${departure ? `${formatTime(departure)}쯤 복귀 출발` : ''}`} />}
-      <Button label="내 방문 일정 보기" onPress={() => router.push('/schedule')} />
-      <Notice text="기록 종료는 앱의 일정·쿠폰만 끝냅니다. 성심당의 실제 대기 접수나 순번은 변경하지 않습니다." />
-      <Button label="앱 기록만 종료" secondary onPress={finish} />
-    </Card>}
-    <SectionTitle>은행동 로컬 가게</SectionTitle>
-    {state.wait?.leaveAllowed && recommendations.length ? recommendations.map((id) => <StoreCard key={id} id={id} />) : <Notice text={state.wait ? '현재 대기시간이나 외출 조건에 맞는 방문 추천이 없어요. 매장 근처에서 대기해 주세요.' : '대기시간을 기록하면 이동·체류시간에 맞는 가게를 추천해 드려요.'} />}
-    <Button label="주변 가게 모두 보기" secondary onPress={() => router.push('/search')} />
-  </Screen>;
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }} style={{ flexGrow: 0 }}>
+        {BRANCH_IDS.map((id) => <Chip key={id} label={BRANCHES[id].name.replace('성심당 ', '')} selected={selectedId === id} onPress={() => { selectBranch(id); setMessage(''); }} />)}
+      </ScrollView>
+      <View style={{ borderColor: '#b8b2ac', borderWidth: 1, borderRadius: 16, paddingVertical: 17, paddingHorizontal: 16, flexDirection: 'row' }}>
+        <View style={{ flex: 1, paddingRight: 12, borderRightColor: '#ddd8d2', borderRightWidth: 1 }}>
+          <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 17 }}>나의 순서</Text>
+          <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 35 }}>{active ? `${active.ticketNumber}번` : '—'}</Text>
+          <Text style={{ color: UI.muted, fontSize: 12 }}>{active ? `${branch.name} · 앞에 ${active.peopleAhead}명` : '줄서기 전'}</Text>
+        </View>
+        <View style={{ flex: 1, paddingLeft: 18 }}>
+          <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 17 }}>현재 대기 인원</Text>
+          <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 35 }}>{state.queue.queueCounts[active?.branchId ?? selectedId]}명</Text>
+          <Text style={{ color: UI.muted, fontSize: 12 }}>앱 내 관리 기준</Text>
+        </View>
+      </View>
+      {!active && <View style={{ gap: 9 }}>
+        <Pressable onPress={() => setLeaveAllowed(!leaveAllowed)} accessibilityRole="checkbox" accessibilityState={{ checked: leaveAllowed }} style={{ paddingVertical: 4 }}><Text style={{ color: UI.ink, fontSize: 13 }}>{leaveAllowed ? '☑' : '☐'} 현장에서 대기줄 이탈 가능 여부를 확인했어요</Text></Pressable>
+        <Button label={`${BRANCHES[selectedId].name} 줄서기`} onPress={() => setMessage(join(selectedId, leaveAllowed) ?? '줄서기를 시작했어요')} />
+      </View>}
+      {active && <View style={{ gap: 9 }}>
+        {active.peopleAhead === 0 && <Button label="입장 QR 보기" onPress={() => router.push('/wallet')} />}
+        <Button label="내 방문 일정" secondary onPress={() => router.push('/schedule')} />
+        <Text onPress={() => { cancel(); setMessage('줄서기를 취소했어요'); }} style={{ color: UI.muted, textDecorationLine: 'underline', textAlign: 'center', paddingVertical: 7 }}>줄서기 취소</Text>
+      </View>}
+      {wait?.status === 'completed' && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>입장 인증 완료</Text>}
+      {!!message && <Text style={{ color: UI.orange, fontSize: 13 }}>{message}</Text>}
+      <View style={{ paddingTop: 12, gap: 13 }}>
+        <SectionTitle>기다리는 동안 이런 곳은 어때요?</SectionTitle>
+        {shops.slice(0, 4).map((store) => <StoreCard key={store.id} id={store.id} />)}
+        <Text onPress={() => router.push('/search')} style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold', textAlign: 'center', padding: 10 }}>주변 가게 더 보기 ›</Text>
+      </View>
+    </View>
+  </ScrollView>;
 }

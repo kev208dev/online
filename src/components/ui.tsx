@@ -4,9 +4,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTabBarMetrics } from './tabBarMetrics';
 import { STORES, type StoreId } from '../data/stores';
-import { type StoreKey } from '../domain/demo';
 import { ORANGE } from '../design/canvas';
-import { useDemo } from '../state/demo';
 
 export const UI = { orange: ORANGE, ink: '#211c19', muted: '#786f69', pale: '#fff4eb', line: '#eee7e1', background: '#fffaf6' };
 export function formatTime(timestamp: number) {
@@ -38,11 +36,9 @@ export function Field({ value, onChangeText, placeholder, keyboardType = 'defaul
 }
 export function StoreCard({ id, onPress }: { id: StoreId; onPress?: () => void }) {
   const store = STORES[id];
-  const { state } = useDemo();
-  const offer = state.offers[id as StoreKey];
   return <Pressable onPress={onPress ?? (() => router.push({ pathname: '/search/detail', params: { id } }))} style={styles.store} accessibilityRole="button">
     <Image source={store.image} style={styles.storeImage} />
-    <View style={{ flex: 1, gap: 5 }}><Text style={styles.storeName}>{store.name}</Text><Text style={styles.storeInfo}>{store.category} · 도보 {store.walkMinutes}분 · 방문 {store.stay}</Text><Text style={styles.storePerk}>{offer?.enabled ? `${offer.title} · 시연 혜택` : '현재 시연 혜택 없음'}</Text></View>
+    <View style={{ flex: 1, gap: 5 }}><Text style={styles.storeName}>{store.name}</Text><Text style={styles.storeInfo}>{store.category} · 도보 약 {store.walkMinutes}분</Text><Text style={styles.storePerk}>{store.perk}</Text></View>
     <Text style={{ color: ORANGE, fontSize: 20 }}>›</Text>
   </Pressable>;
 }

@@ -18,6 +18,7 @@ export function TabBar() {
   const { bottom, height } = useTabBarMetrics();
   const supportsGlass = isGlassEffectAPIAvailable() && isLiquidGlassAvailable();
   const Surface = supportsGlass ? GlassView : View;
+  if (!TABS.some((tab) => tab.path === pathname)) return null;
 
   return (
     <Surface
@@ -25,7 +26,7 @@ export function TabBar() {
       style={[styles.bar, { bottom, height }, !supportsGlass && styles.fallback]}
     >
       {TABS.map((tab) => {
-        const selected = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path);
+        const selected = pathname === tab.path;
         const color = selected ? ORANGE : '#333333';
         return (
           <Pressable
