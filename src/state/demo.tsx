@@ -19,16 +19,21 @@ import {
 import type { StoreId } from '../data/storeCatalog';
 import { notifyQueueAdvance } from '../notifications/reminders';
 import { createAppState, createLocalQueueRepository, type AppState } from './queueRepository';
+import { adminGate } from './adminCredentials';
 
 const repository = createLocalQueueRepository(AsyncStorage);
 type Api = {
   state: AppState;
   now: number;
   ready: boolean;
+  admin: { hasPin: boolean; unlocked: boolean };
+  setAdminPin: (code: string, pin: string) => Promise<string | undefined>;
+  unlockAdmin: (pin: string) => Promise<string | undefined>;
+  lockAdmin: () => void;
   join: (branchId: BranchId, leaveAllowed: boolean) => string | undefined;
   selectBranch: (branchId: BranchId) => void;
   setCount: (branchId: BranchId, count: number) => string | undefined;
-  advance: (branchId: BranchId) => void;
+  advance: (branchId: BranchId) => string | undefined;
   cancel: () => void;
   verifyEntry: (branchId: BranchId, code: string) => string | undefined;
   addLocal: (id: StoreId) => string | undefined;
@@ -55,20 +60,25 @@ const Context = createContext<Api | null>(null);
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState(createAppState);
   const [ready, setReady] = useState(false);
+  const [admin, setAdmin] = useState({ hasPin: false, unlocked: false });
   const [now, setNow] = useState(Date.now);
   const live = useRef(state);
   const hydrated = useRef(false);
 
   useEffect(() => {
     let mounted = true;
-    repository.load().then((restored) => {
+    Promise.all([repository.load(), adminGate.initialize()]).then(([restored]) => {
       if (!mounted) return;
       live.current = restored;
       setState(restored);
+      setAdmin({ hasPin: adminGate.hasPin, unlocked: false });
       hydrated.current = true;
       setReady(true);
     }).catch(() => { hydrated.current = true; setReady(true); });
-    const appListener = NativeAppState.addEventListener('change', (status) => { if (status === 'active') setNow(Date.now()); });
+    const appListener = NativeAppState.addEventListener('change', (status) => {
+      if (status === 'active') setNow(Date.now());
+      else if (status === 'background') { adminGate.lock(); setAdmin({ hasPin: adminGate.hasPin, unlocked: false }); }
+    });
     return () => { mounted = false; appListener.remove(); };
   }, []);
 
@@ -78,6 +88,20 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     setNow(Date.now());
     if (hydrated.current) void repository.save(next).catch(() => {});
   }, []);
+  const setAdminPin = useCallback(async (code: string, pin: string) => {
+    const reason = await adminGate.setup(code, pin);
+    setAdmin({ hasPin: adminGate.hasPin, unlocked: false });
+    return reason;
+  }, []);
+  const unlockAdmin = useCallback(async (pin: string) => {
+    const reason = await adminGate.unlock(pin);
+    setAdmin({ hasPin: adminGate.hasPin, unlocked: adminGate.unlocked });
+    return reason;
+  }, []);
+  const lockAdmin = useCallback(() => {
+    adminGate.lock();
+    setAdmin({ hasPin: adminGate.hasPin, unlocked: false });
+  }, []);
   const join = useCallback((branchId: BranchId, leaveAllowed: boolean) => {
     const result = joinQueue(live.current.queue, branchId, leaveAllowed, `ONLINE-ENTRY-${randomUUID()}`);
     if (!result.reason) replace({ ...live.current, queue: result.state });
@@ -85,10 +109,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [replace]);
   const chooseBranch = useCallback((branchId: BranchId) => replace({ ...live.current, queue: selectBranch(live.current.queue, branchId) }), [replace]);
   const setCount = useCallback((branchId: BranchId, count: number) => {
+    if (!adminGate.unlocked) return '관리자 잠금을 해제해 주세요';
     try { replace({ ...live.current, queue: setQueueCount(live.current.queue, branchId, count) }); return undefined; }
     catch (error) { return error instanceof Error ? error.message : '대기 인원을 확인해 주세요'; }
   }, [replace]);
   const advance = useCallback((branchId: BranchId) => {
+    if (!adminGate.unlocked) return '관리자 잠금을 해제해 주세요';
     const before = live.current.queue.wait?.peopleAhead;
     const next = processAhead(live.current.queue, branchId);
     replace({ ...live.current, queue: next });
@@ -99,6 +125,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     replace({ ...live.current, queue: cancelQueue(live.current.queue), commerce: waitId ? expireCoupons(live.current.commerce, waitId) : live.current.commerce });
   }, [replace]);
   const verifyEntryCode = useCallback((branchId: BranchId, code: string) => {
+    if (!adminGate.unlocked) return '관리자 잠금을 해제해 주세요';
     const result = verifyEntry(live.current.queue, branchId, code);
     if (!result.reason) {
       const waitId = live.current.queue.wait?.id;
@@ -119,6 +146,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return result;
   }, [replace]);
   const redeemLocal = useCallback((id: StoreId, code: string) => {
+    if (!adminGate.unlocked) return '관리자 잠금을 해제해 주세요';
     const result = redeemLocalCoupon(live.current.commerce, id, code);
     if (!result.reason) replace({ ...live.current, commerce: result.state });
     return result.reason;
@@ -143,16 +171,20 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return result;
   }, [replace]);
   const redeem = useCallback((id: StoreKey, code: string) => {
+    if (!adminGate.unlocked) return '관리자 잠금을 해제해 주세요';
     const result = redeemCoupon(live.current, id, code);
     if (!result.reason) replace(result.state as AppState);
     return result.reason;
   }, [replace]);
-  const offer = useCallback((id: StoreKey, title: string, condition: string, enabled: boolean) =>
-    replace(updateOffer(live.current, id, title, condition, enabled) as AppState), [replace]);
-  const profile = useCallback((id: StoreKey, value: StoreProfile) => replace(updateProfile(live.current, id, value) as AppState), [replace]);
+  const offer = useCallback((id: StoreKey, title: string, condition: string, enabled: boolean) => {
+    if (adminGate.unlocked) replace(updateOffer(live.current, id, title, condition, enabled) as AppState);
+  }, [replace]);
+  const profile = useCallback((id: StoreKey, value: StoreProfile) => {
+    if (adminGate.unlocked) replace(updateProfile(live.current, id, value) as AppState);
+  }, [replace]);
   const alerts = useCallback((enabled: boolean) => replace({ ...live.current, alertsEnabled: enabled }), [replace]);
-  const reset = useCallback(() => replace(createAppState()), [replace]);
-  return <Context.Provider value={{ state, now, ready, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
+  const reset = useCallback(() => { if (adminGate.unlocked) replace(createAppState()); }, [replace]);
+  return <Context.Provider value={{ state, now, ready, admin, setAdminPin, unlockAdmin, lockAdmin, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
 }
 export function useDemo() {
   const value = useContext(Context);

@@ -33,8 +33,8 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
   return <Pressable onPress={onPress} style={[styles.chip, selected && { backgroundColor: ORANGE, borderColor: ORANGE }]}><Text style={[styles.chipText, selected && { color: '#fff' }]}>{label}</Text></Pressable>;
 }
 export function Notice({ text }: { text: string }) { return <View style={styles.notice}><Text style={styles.noticeText}>{text}</Text></View>; }
-export function Field({ value, onChangeText, placeholder, keyboardType = 'default' }: { value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: 'default' | 'number-pad' }) {
-  return <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} keyboardType={keyboardType} style={styles.input} placeholderTextColor="#9d958f" />;
+export function Field({ value, onChangeText, placeholder, keyboardType = 'default', secureTextEntry = false, autoCapitalize = 'sentences' }: { value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: 'default' | 'number-pad'; secureTextEntry?: boolean; autoCapitalize?: 'none' | 'sentences' }) {
+  return <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} keyboardType={keyboardType} secureTextEntry={secureTextEntry} autoCapitalize={autoCapitalize} style={styles.input} placeholderTextColor="#9d958f" />;
 }
 export function StoreCard({ id, onPress }: { id: StoreId; onPress?: () => void }) {
   const store = STORES[id];

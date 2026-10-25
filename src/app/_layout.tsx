@@ -34,6 +34,7 @@ export default function RootLayout() {
           <Stack.Screen name="wallet" />
           <Stack.Screen name="merchant" />
           <Stack.Screen name="merchant-scanner" />
+          <Stack.Screen name="admin-setup" />
         </Stack>
         <TabBar />
       </View>
