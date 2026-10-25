@@ -4,12 +4,14 @@ import { Text, View } from 'react-native';
 import { Card, Screen, SectionTitle, SharedConnectionNotice, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
 import { STORES } from '../data/stores';
+import { estimateQueueWait } from '../domain/queue';
 import { useDemo } from '../state/demo';
 
 export default function WalletScreen() {
   const { code } = useLocalSearchParams<{ code?: string }>();
   const { state, now, connection } = useDemo();
   const wait = state.queue.wait;
+  const estimate = estimateQueueWait(state.queue);
   const coupons = [...state.commerce.coupons].sort((a, b) => b.issuedAt - a.issuedAt);
   return <Screen title="내 쿠폰·입장 QR" back>
     <SharedConnectionNotice connection={connection} />
@@ -19,7 +21,7 @@ export default function WalletScreen() {
       <View style={{ alignItems: 'center', paddingVertical: 12 }}><QRCode value={wait.entryCode} size={205} color={UI.ink} backgroundColor="#fff" /></View>
       <Text selectable style={{ color: UI.muted, textAlign: 'center', fontSize: 11 }}>{wait.entryCode}</Text>
     </Card>}
-    {wait?.status === 'waiting' && wait.peopleAhead > 0 && <Card><Text style={{ color: UI.ink }}>입장 QR은 내 차례에 표시돼요.</Text><Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 22 }}>앞에 {wait.peopleAhead}명</Text></Card>}
+    {wait?.status === 'waiting' && wait.peopleAhead > 0 && <Card><Text style={{ color: UI.ink }}>입장 QR은 내 차례에 표시돼요.</Text><Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 22 }}>앞에 {wait.peopleAhead}명</Text><Text style={{ color: UI.muted, fontSize: 13 }}>예상 대기 {estimate?.label}</Text></Card>}
     {wait?.status === 'completed' && <Card><Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold' }}>입장 인증 완료</Text></Card>}
     <SectionTitle>발급한 쿠폰 {coupons.length}</SectionTitle>
     {coupons.map((coupon) => {

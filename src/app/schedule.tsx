@@ -2,17 +2,20 @@ import { router } from 'expo-router';
 import { Text } from 'react-native';
 import { Button, Card, Screen, SharedConnectionNotice, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
+import { estimateQueueWait } from '../domain/queue';
 import { useDemo } from '../state/demo';
 
 export default function QueueScreen() {
   const { state, connection } = useDemo();
   const wait = state.queue.wait;
+  const estimate = estimateQueueWait(state.queue);
   return <Screen title="내 줄서기">
     <SharedConnectionNotice connection={connection} />
     {wait?.status === 'waiting' ? <Card>
       <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[wait.branchId].name}</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 28 }}>{wait.ticketNumber}번</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 20 }}>내 앞에 {wait.peopleAhead}명</Text>
+      {estimate && wait.peopleAhead > 0 && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 22 }}>예상 대기 {estimate.label}</Text>}
       {wait.peopleAhead <= 3 && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{wait.peopleAhead === 0 ? '입장 차례예요' : '돌아갈 준비를 해주세요'}</Text>}
       {!wait.leaveAllowed && <Text style={{ color: UI.muted }}>현장 대기줄을 유지해 주세요.</Text>}
       {wait.peopleAhead === 0 && <Button label="입장 QR 보기" onPress={() => router.push('/wallet')} />}

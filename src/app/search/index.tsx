@@ -7,7 +7,7 @@ import { Button, Chip, QueueLeaveCheck, SectionTitle, SharedConnectionNotice, St
 import { useTabBarMetrics } from '../../components/tabBarMetrics';
 import { BRANCHES } from '../../data/branches';
 import { storesForBranch } from '../../data/stores';
-import { BRANCH_IDS } from '../../domain/queue';
+import { BRANCH_IDS, estimateQueueWait } from '../../domain/queue';
 import { joinAndOpenQueue } from '../../flows/join';
 import { useDemo } from '../../state/demo';
 
@@ -21,6 +21,7 @@ export default function SearchScreen() {
   const tab = useTabBarMetrics();
   const branchId = state.queue.selectedBranchId;
   const active = state.queue.wait?.status === 'waiting' ? state.queue.wait : null;
+  const waitEstimate = estimateQueueWait(state.queue);
   const wait = state.queue.wait?.status === 'waiting' && state.queue.wait.branchId === branchId ? state.queue.wait : null;
   const rows = storesForBranch(branchId);
   const mapHeight = Math.max(290, Math.min(430, height * 0.44));
@@ -32,6 +33,7 @@ export default function SearchScreen() {
       <SharedConnectionNotice connection={connection} />
       <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 19 }}>{wait ? '현재 웨이팅 중이에요' : '주변 가게를 둘러보세요'}</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[branchId].name} · {wait ? `앞에 ${wait.peopleAhead}명` : `${state.queue.queueCounts[branchId]}명 대기`}</Text>
+      {wait && waitEstimate && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold', fontSize: 13 }}>{waitEstimate.minutes === 0 ? '입장 차례예요' : `예상 대기 ${waitEstimate.label}`}</Text>}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }} style={{ flexGrow: 0 }}>
         {BRANCH_IDS.map((id) => <Chip key={id} label={BRANCHES[id].name.replace('성심당 ', '')} selected={branchId === id} onPress={() => { selectBranch(id); setMessage(''); }} />)}
       </ScrollView>

@@ -4,7 +4,7 @@ import { Alert, Image, ScrollView, Text, View, useWindowDimensions } from 'react
 import { useTabBarMetrics } from '../components/tabBarMetrics';
 import { Button, Chip, QueueLeaveCheck, SectionTitle, SharedConnectionNotice, StoreCard, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
-import { BRANCH_IDS } from '../domain/queue';
+import { BRANCH_IDS, estimateQueueWait } from '../domain/queue';
 import { homeView } from '../domain/homeView';
 import { joinAndOpenQueue } from '../flows/join';
 import { images } from '../design/assets';
@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const selectedId = overview.selectedBranchId;
   const wait = state.queue.wait;
   const active = overview.activeWait;
+  const waitEstimate = estimateQueueWait(state.queue);
   const branch = BRANCHES[active?.branchId ?? selectedId];
   const shops = overview.stores;
 
@@ -48,7 +49,8 @@ export default function HomeScreen() {
         <View style={{ flex: 1, paddingRight: 12, borderRightColor: '#ddd8d2', borderRightWidth: 1 }}>
           <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 17 }}>나의 순서</Text>
           <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 35 }}>{active ? `${active.ticketNumber}번` : '—'}</Text>
-          <Text style={{ color: UI.muted, fontSize: 12 }}>{active ? `${branch.name} · 앞에 ${active.peopleAhead}명` : '줄서기 전'}</Text>
+          <Text style={{ color: UI.muted, fontSize: 12 }}>{active ? `${branch.name} · 내 앞 ${active.peopleAhead}명` : '줄서기 전'}</Text>
+          {waitEstimate && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold', fontSize: 12 }}>{waitEstimate.minutes === 0 ? '입장 차례예요' : `예상 대기 ${waitEstimate.label}`}</Text>}
         </View>
         <View style={{ flex: 1, paddingLeft: 18 }}>
           <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 17 }}>선택 지점 대기 인원</Text>

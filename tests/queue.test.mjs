@@ -54,6 +54,25 @@ test('processing a person ahead works even after total was manually lowered to z
   assert.equal(state.queueCounts.main, 0);
 });
 
+test('remaining people and estimated time follow the registered wait, not manual total edits', async () => {
+  const { createQueueState, setQueueCount, joinQueue, processAhead, selectBranch, estimateQueueWait } = await queueDomain();
+  let state = joinQueue(setQueueCount(createQueueState(), 'main', 25), 'main', true, 'ENTRY-ESTIMATE', now).state;
+  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 25, minutes: 75, label: '약 1시간 15분' });
+  state = selectBranch(setQueueCount(state, 'main', 1), 'dcc');
+  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 25, minutes: 75, label: '약 1시간 15분' });
+  state = processAhead(state, 'main');
+  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 24, minutes: 72, label: '약 1시간 12분' });
+});
+
+test('zero people ahead means entry turn rather than a misleading wait estimate', async () => {
+  const { createQueueState, joinQueue, verifyEntry, estimateQueueWait } = await queueDomain();
+  const joined = joinQueue(createQueueState(), 'station', true, 'ENTRY-ZERO', now).state;
+  assert.deepEqual(estimateQueueWait(joined), { peopleAhead: 0, minutes: 0, label: '입장 차례' });
+  const completed = verifyEntry(joined, 'station', 'ENTRY-ZERO', now + 1).state;
+  assert.equal(estimateQueueWait(completed), null);
+  assert.equal(estimateQueueWait(createQueueState()), null);
+});
+
 test('changing selected branch leaves actual registration untouched', async () => {
   const { createQueueState, joinQueue, selectBranch } = await queueDomain();
   const joined = joinQueue(createQueueState(), 'main', true, 'ENTRY-1', now).state;
