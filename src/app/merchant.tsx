@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Alert, Keyboard, Text, View } from 'react-native';
 import { Button, Card, Chip, Field, Notice, Screen, SectionTitle, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
 import { storesForBranch } from '../data/stores';
 import { BRANCH_IDS, type BranchId } from '../domain/queue';
+import { entryFeedback } from '../domain/entryFeedback';
 import type { StoreId } from '../data/storeCatalog';
 import { useDemo } from '../state/demo';
 
@@ -15,6 +16,7 @@ export default function MerchantScreen() {
   const [storeId, setStoreId] = useState<StoreId>('madeby');
   const [count, setCountText] = useState('');
   const [entryCode, setEntryCode] = useState('');
+  const [entryMessage, setEntryMessage] = useState('');
   const [couponCode, setCouponCode] = useState('');
   const [message, setMessage] = useState('');
   const shops = storesForBranch(branchId);
@@ -42,7 +44,16 @@ export default function MerchantScreen() {
     <Card>
       <SectionTitle>입장 인증</SectionTitle>
       <Field value={entryCode} onChangeText={setEntryCode} placeholder="입장 코드 입력" autoCapitalize="none" />
-      <Button label="입장 코드 확인" onPress={() => setMessage(verifyEntry(branchId, entryCode) ?? '입장 인증이 완료됐어요')} />
+      <Button label="입장 코드 확인" onPress={() => {
+        const reason = verifyEntry(branchId, entryCode);
+        const feedback = entryFeedback(reason);
+        Keyboard.dismiss();
+        setEntryMessage(feedback.message);
+        setMessage('');
+        if (!reason) setEntryCode('');
+        Alert.alert(feedback.title, feedback.message);
+      }} />
+      {!!entryMessage && <Notice text={entryMessage} />}
       <Button label="입장 QR 스캔" secondary onPress={() => router.push({ pathname: '/merchant-scanner', params: { mode: 'entry', branchId } })} />
     </Card>
     <Card>
