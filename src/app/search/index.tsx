@@ -7,12 +7,12 @@ import { Button, Chip, QueueLeaveCheck, SectionTitle, SharedConnectionNotice, St
 import { useTabBarMetrics } from '../../components/tabBarMetrics';
 import { BRANCHES } from '../../data/branches';
 import { storesForBranch } from '../../data/stores';
-import { BRANCH_IDS, estimateQueueWait } from '../../domain/queue';
+import { BRANCH_IDS, estimateQueueWait, queueRestrictionUntil, restrictionEndLabel } from '../../domain/queue';
 import { joinAndOpenQueue } from '../../flows/join';
 import { useDemo } from '../../state/demo';
 
 export default function SearchScreen() {
-  const { state, connection, selectBranch, joinSelected } = useDemo();
+  const { state, now, connection, selectBranch, joinSelected } = useDemo();
   const [leaveAllowed, setLeaveAllowed] = useState(false);
   const [joining, setJoining] = useState(false);
   const [message, setMessage] = useState('');
@@ -20,6 +20,7 @@ export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const tab = useTabBarMetrics();
   const branchId = state.queue.selectedBranchId;
+  const restrictedUntil = queueRestrictionUntil(state.queue, branchId, now);
   const active = state.queue.wait?.status === 'waiting' ? state.queue.wait : null;
   const waitEstimate = estimateQueueWait(state.queue);
   const wait = state.queue.wait?.status === 'waiting' && state.queue.wait.branchId === branchId ? state.queue.wait : null;
@@ -41,8 +42,8 @@ export default function SearchScreen() {
         {active.branchId !== branchId && <Text style={{ color: UI.muted, fontSize: 12 }}>현재 {BRANCHES[active.branchId].name}에 줄서기 중이에요.</Text>}
         <Button label="내 줄서기 보기" secondary onPress={() => router.dismissTo('/schedule')} />
       </View> : <View style={{ gap: 8 }}>
-        <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
-        <Button label={`${BRANCHES[branchId].name} 줄서기`} disabled={!leaveAllowed || joining || (connection.mode !== 'local' && (connection.mode !== 'customer' || connection.status !== 'connected'))} onPress={async () => {
+        {restrictedUntil ? <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold', fontSize: 13 }}>{restrictionEndLabel(restrictedUntil)}까지 이 지점의 줄서기를 이용할 수 없어요.</Text> : <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />}
+        <Button label={`${BRANCHES[branchId].name} 줄서기`} disabled={!!restrictedUntil || !leaveAllowed || joining || (connection.mode !== 'local' && (connection.mode !== 'customer' || connection.status !== 'connected'))} onPress={async () => {
           setJoining(true);
           try {
             const reason = await joinAndOpenQueue(() => joinSelected(leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);

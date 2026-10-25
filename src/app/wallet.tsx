@@ -5,6 +5,7 @@ import { Card, Screen, SectionTitle, SharedConnectionNotice, UI } from '../compo
 import { BRANCHES } from '../data/branches';
 import { STORES } from '../data/stores';
 import { estimateQueueWait } from '../domain/queue';
+import { couponDisplay } from '../domain/commerce';
 import { useDemo } from '../state/demo';
 
 export default function WalletScreen() {
@@ -26,10 +27,11 @@ export default function WalletScreen() {
     <SectionTitle>발급한 쿠폰 {coupons.length}</SectionTitle>
     {coupons.map((coupon) => {
       const status = coupon.usedAt ? '사용 완료' : coupon.expiresAt <= now ? '만료' : '사용 가능';
+      const display = couponDisplay(coupon);
       return <Card key={coupon.code} style={code === coupon.code ? { borderColor: UI.orange, borderWidth: 2 } : undefined}>
         <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{STORES[coupon.storeId].name} · {status}</Text>
-        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 20 }}>{coupon.title}</Text>
-        <Text style={{ color: UI.muted, fontSize: 12 }}>{coupon.condition}</Text>
+        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 20 }}>{display.title}</Text>
+        {!!display.condition && <Text style={{ color: UI.muted, fontSize: 12 }}>{display.condition}</Text>}
         {status === '사용 가능' && <View style={{ alignItems: 'center', paddingVertical: 12 }}><QRCode value={coupon.code} size={205} color={UI.ink} backgroundColor="#fff" /></View>}
         <Text selectable style={{ color: UI.muted, fontSize: 11, textAlign: 'center' }}>{coupon.code}</Text>
       </Card>;

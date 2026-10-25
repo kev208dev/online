@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -72,6 +72,46 @@ test('pairing with the wrong selected role does not consume the code', async (t)
   const merchant = await f.request('/pair', 'POST', { code: f.started.codes.merchant, role: 'merchant' });
   assert.equal(merchant.status, 200);
   assert.equal(merchant.body.role, 'merchant');
+});
+
+test('server persists branch-specific cancellation restrictions across restart', async (t) => {
+  let now = Date.UTC(2026, 0, 31, 12);
+  const f = await fixture(t, () => now);
+  const customer = await f.pair(f.started.codes.customer);
+  assert.equal((await f.request('/action', 'POST', { type: 'join', branchId: 'main', acceptedTerms: true }, customer.token)).status, 200);
+  const cancelled = await f.request('/action', 'POST', { type: 'cancel' }, customer.token);
+  assert.equal(cancelled.status, 200);
+  assert.equal(cancelled.body.result?.restrictedUntil, Date.UTC(2026, 3, 30, 12));
+  const denied = await f.request('/action', 'POST', { type: 'join', branchId: 'main', acceptedTerms: true }, customer.token);
+  assert.equal(denied.status, 400);
+  assert.match(denied.body.error, /3개월/);
+  await f.service.close();
+  const restarted = createLanService({ dataPath: f.dataPath, host: '127.0.0.1', port: 0, now: () => now });
+  const { port } = await restarted.listen();
+  t.after(() => restarted.close());
+  const call = async (branchId) => {
+    const response = await fetch(`http://127.0.0.1:${port}/action`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${customer.token}` }, body: JSON.stringify({ type: 'join', branchId, acceptedTerms: true }) });
+    return { status: response.status, body: await response.json() };
+  };
+  assert.equal((await call('main')).status, 400);
+  assert.equal((await call('dcc')).status, 200);
+});
+
+test('server loads pre-restriction records without dropping queue history', async (t) => {
+  const f = await fixture(t, () => 1000);
+  await f.service.close();
+  const old = JSON.parse(await readFile(f.dataPath, 'utf8'));
+  old.shared.queue.queueCounts.main = 7;
+  delete old.shared.queue.blockedUntil;
+  await writeFile(f.dataPath, JSON.stringify(old));
+  const restarted = createLanService({ dataPath: f.dataPath, host: '127.0.0.1', port: 0, now: () => 1000 });
+  const { port } = await restarted.listen();
+  t.after(() => restarted.close());
+  const paired = await fetch(`http://127.0.0.1:${port}/pair`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role: 'customer', code: f.started.codes.customer }) });
+  const result = await paired.json();
+  assert.equal(paired.status, 200);
+  assert.equal(result.state.queue.queueCounts.main, 7);
+  assert.deepEqual(result.state.queue.blockedUntil, { main: 0, station: 0, dcc: 0, lotte: 0 });
 });
 
 test('simultaneous coupon redemption commits exactly once', async (t) => {

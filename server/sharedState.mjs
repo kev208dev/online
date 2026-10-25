@@ -34,10 +34,12 @@ export function applyAction(state, role, action, now = Date.now()) {
   if (type === 'cancel') {
     const waitId = state.queue.wait?.id;
     if (!waitId || state.queue.wait.status !== 'waiting') return { state, reason: '취소할 줄서기가 없어요' };
+    const branchId = state.queue.wait.branchId;
+    const queue = cancelQueue(state.queue, now);
     return { state: {
-      queue: cancelQueue(state.queue, now),
+      queue,
       commerce: expireCoupons(state.commerce, waitId, now),
-    } };
+    }, result: { restrictedUntil: queue.blockedUntil[branchId] } };
   }
   if (type === 'setCount') {
     try { return { state: { ...state, queue: setQueueCount(state.queue, action.branchId, action.count) } }; }

@@ -42,7 +42,7 @@ test('v1 timed wait does not revive as a queue and old coupon history expires', 
   assert.equal(state.coupons[0].expiresAt, now);
   assert.equal(state.commerce.coupons[0].code, 'OLD');
   assert.equal(state.commerce.coupons[0].expiresAt, now);
-  assert.match(state.commerce.coupons[0].condition, /실제 할인 없음/);
+  assert.equal(state.commerce.coupons[0].condition, '');
   assert.equal(state.commerce.coupons[1].code, 'USED');
   assert.equal(state.commerce.coupons[1].usedAt, now - 1_000);
   assert.equal(state.offers.madeby.title, '편집한 혜택');
@@ -65,6 +65,22 @@ test('v2 round trip preserves selected and registered branches plus independent 
   assert.equal(loaded.queue.wait.peopleAhead, 12);
   assert.equal(loaded.queue.queueCounts.main, 1);
   assert.equal(loaded.queue.nextTicketNumbers.main, 2);
+});
+
+test('old v2 queue gains empty restrictions and cancelled branch restriction survives reload', async () => {
+  const { repository, queue } = await modules();
+  const storage = memoryStorage();
+  const local = repository.createLocalQueueRepository(storage, () => now);
+  const old = repository.createAppState();
+  delete old.queue.blockedUntil;
+  storage.values.set('online-queue-v2', JSON.stringify({ version: 2, state: old }));
+  const restored = await local.load();
+  assert.deepEqual(restored.queue.blockedUntil, { main: 0, station: 0, dcc: 0, lotte: 0 });
+  const joined = queue.joinQueue(restored.queue, 'main', true, 'ENTRY-CANCEL', now).state;
+  await local.save({ ...restored, queue: queue.cancelQueue(joined, now + 1) });
+  const reloaded = await local.load();
+  assert.ok(reloaded.queue.blockedUntil.main > now);
+  assert.match(queue.joinQueue(reloaded.queue, 'main', true, 'ENTRY-NEW', now + 2).reason, /3개월/);
 });
 
 test('repository serializes consecutive saves so the newest state wins', async () => {

@@ -33,7 +33,7 @@ test('manual total never changes the next ticket and joining stores people ahead
 test('manual total below ticket number never rewrites ticket, ahead, or next number', async () => {
   const { createQueueState, setQueueCount, joinQueue, cancelQueue } = await queueDomain();
   const first = joinQueue(setQueueCount(createQueueState(), 'main', 12), 'main', true, 'ENTRY-1', now).state;
-  const joined = joinQueue(cancelQueue(first, now + 1), 'main', true, 'ENTRY-2', now + 2).state;
+  const joined = joinQueue(cancelQueue(first, now + 1), 'main', true, 'ENTRY-2', Date.UTC(2027, 4, 1)).state;
   const edited = setQueueCount(joined, 'main', 1);
   assert.equal(edited.queueCounts.main, 1);
   assert.equal(edited.wait.ticketNumber, 2);
@@ -113,14 +113,38 @@ test('search joins the selected branch but cannot replace an active registration
   assert.equal(duplicate.state.wait.branchId, 'dcc');
 });
 
-test('active registration cannot be duplicated and cancelled ticket is never reused', async () => {
+test('active registration cannot be duplicated and cancelled ticket is never reused after restriction expires', async () => {
   const { createQueueState, joinQueue, cancelQueue } = await queueDomain();
   const first = joinQueue(createQueueState(), 'main', true, 'ENTRY-1', now).state;
   assert.match(joinQueue(first, 'dcc', true, 'ENTRY-2', now).reason, /이미/);
   const cancelled = cancelQueue(first, now + 1);
-  const second = joinQueue(cancelled, 'main', true, 'ENTRY-2', now + 2).state;
+  const second = joinQueue(cancelled, 'main', true, 'ENTRY-2', Date.UTC(2027, 4, 1)).state;
   assert.equal(second.wait.ticketNumber, 2);
   assert.equal(second.nextTicketNumbers.main, 3);
+});
+
+test('cancelling blocks only that branch for three calendar months without changing issued tickets', async () => {
+  const { createQueueState, joinQueue, cancelQueue, restrictionEndLabel } = await queueDomain();
+  const cancelledAt = Date.UTC(2026, 0, 31, 12);
+  const joined = joinQueue(createQueueState(), 'main', true, 'ENTRY-1', cancelledAt - 1000).state;
+  const cancelled = cancelQueue(joined, cancelledAt);
+  assert.equal(cancelled.blockedUntil?.main, Date.UTC(2026, 3, 30, 12));
+  assert.equal(restrictionEndLabel(cancelled.blockedUntil.main), '2026년 4월 30일');
+  assert.equal(cancelled.queueCounts.main, 0);
+  assert.equal(cancelled.nextTicketNumbers.main, 2);
+  const denied = joinQueue(cancelled, 'main', true, 'ENTRY-2', cancelledAt + 1);
+  assert.match(denied.reason, /3개월|이용 제한/);
+  assert.equal(denied.state, cancelled);
+  assert.equal(joinQueue(cancelled, 'dcc', true, 'ENTRY-DCC', cancelledAt + 1).state.wait.branchId, 'dcc');
+  assert.equal(joinQueue(cancelled, 'main', true, 'ENTRY-2', Date.UTC(2026, 3, 30, 12)).state.wait.ticketNumber, 2);
+});
+
+test('three-month restriction uses the Korean calendar date near midnight', async () => {
+  const { createQueueState, joinQueue, cancelQueue } = await queueDomain();
+  const cancelledAt = Date.UTC(2026, 0, 30, 16); // January 31, 01:00 in Seoul.
+  const joined = joinQueue(createQueueState(), 'main', true, 'ENTRY-NIGHT', cancelledAt - 1000).state;
+  const cancelled = cancelQueue(joined, cancelledAt);
+  assert.equal(cancelled.blockedUntil.main, Date.UTC(2026, 3, 29, 16)); // April 30, 01:00 in Seoul.
 });
 
 test('entry QR is unavailable before turn, branch-specific, and single-use', async () => {

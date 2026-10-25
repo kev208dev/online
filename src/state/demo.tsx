@@ -38,7 +38,7 @@ type Api = {
   selectBranch: (branchId: BranchId) => void;
   setCount: (branchId: BranchId, count: number) => Promise<string | undefined>;
   advance: (branchId: BranchId) => Promise<string | undefined>;
-  cancel: () => Promise<string | undefined>;
+  cancel: () => Promise<{ reason?: string; restrictedUntil?: number }>;
   verifyEntry: (branchId: BranchId, code: string) => Promise<string | undefined>;
   issueLocal: (id: StoreId) => Promise<CommerceChange & { couponCode?: string }>;
   redeemLocal: (id: StoreId, code: string) => Promise<string | undefined>;
@@ -220,12 +220,15 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [replaceDevice, sharedAction]);
   const cancel = useCallback(async () => {
     if (connectionRef.current.mode !== 'local') {
-      if (connectionRef.current.mode !== 'customer') return '고객폰에서 취소해 주세요';
-      return (await sharedAction({ type: 'cancel' })).reason;
+      if (connectionRef.current.mode !== 'customer') return { reason: '고객폰에서 취소해 주세요' };
+      const result = await sharedAction({ type: 'cancel' });
+      return { reason: result.reason, restrictedUntil: result.result?.restrictedUntil };
     }
-    const waitId = local.current.queue.wait?.id;
-    replaceDevice({ ...local.current, queue: cancelQueue(local.current.queue), commerce: waitId ? expireCoupons(local.current.commerce, waitId) : local.current.commerce });
-    return undefined;
+    const wait = local.current.queue.wait;
+    if (!wait || wait.status !== 'waiting') return { reason: '취소할 줄서기가 없어요' };
+    const queue = cancelQueue(local.current.queue);
+    replaceDevice({ ...local.current, queue, commerce: expireCoupons(local.current.commerce, wait.id) });
+    return { restrictedUntil: queue.blockedUntil[wait.branchId] };
   }, [replaceDevice, sharedAction]);
   const verifyEntryCode = useCallback(async (branchId: BranchId, code: string) => {
     if (!adminGate.unlocked) return '관리자 잠금을 해제해 주세요';

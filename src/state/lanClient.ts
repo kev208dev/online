@@ -13,7 +13,7 @@ export type LanAction =
   | { type: 'issueCoupon'; storeId: StoreId }
   | { type: 'redeemCoupon'; storeId: StoreId; code: string };
 export type LanSession = { baseUrl: string; token: string; role: LanRole };
-export type LanResponse = { state: LanState; result?: { couponCode?: string } };
+export type LanResponse = { state: LanState; result?: { couponCode?: string; restrictedUntil?: number } };
 type Fetcher = typeof fetch;
 
 export class LanError extends Error {

@@ -29,13 +29,13 @@ export function Button({ label, onPress, secondary = false, disabled = false }: 
 }
 export function QueueLeaveCheck({ checked, onPress }: { checked: boolean; onPress: () => void }) {
   return <View style={styles.queueLeaveCheck}>
-    <Text style={styles.queueLeaveHeading}>[필수] 대기 이탈 시 이용 제한 동의</Text>
-    <Text style={styles.queueLeaveDescription}>사전 취소 없이 대기를 이탈하거나, 입장 호출 후 안내된 시간 내에 입장하지 않을 경우 대기가 취소되며 사전에 고지된 운영 기준에 따라 서비스 이용이 제한될 수 있습니다.</Text>
-    <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked }} accessibilityLabel="위 내용을 확인했으며, 대기 이탈 및 미입장 시 이용 제한 조치에 동의합니다." style={styles.queueLeaveRow}>
+    <Text style={styles.queueLeaveHeading}>[필수] 줄서기 취소 시 이용 제한 동의</Text>
+    <Text style={styles.queueLeaveDescription}>줄서기를 취소하면 취소한 성심당 지점에는 3개월 동안 다시 줄설 수 없습니다. 다른 지점의 줄서기는 이용할 수 있습니다.</Text>
+    <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked }} accessibilityLabel="줄서기 취소 시 해당 지점의 3개월 이용 제한에 동의합니다." style={styles.queueLeaveRow}>
       <View style={[styles.queueLeaveBox, checked && styles.queueLeaveBoxChecked]}>
         {checked && <Text style={styles.queueLeaveMark}>✓</Text>}
       </View>
-      <Text style={styles.queueLeaveText}>위 내용을 확인했으며, 대기 이탈 및 미입장 시 이용 제한 조치에 동의합니다.</Text>
+      <Text style={styles.queueLeaveText}>줄서기 취소 시 해당 지점의 3개월 이용 제한에 동의합니다.</Text>
     </Pressable>
   </View>;
 }
@@ -54,7 +54,7 @@ export function StoreCard({ id, onPress }: { id: StoreId; onPress?: () => void }
   const store = STORES[id];
   return <Pressable onPress={onPress ?? (() => router.push({ pathname: '/search/detail', params: { id } }))} style={styles.store} accessibilityRole="button">
     <Image source={store.image} style={styles.storeImage} />
-    <View style={{ flex: 1, gap: 5 }}><Text style={styles.storeName}>{store.name}</Text><Text style={styles.storeInfo}>{store.category} · 도보 약 {store.walkMinutes}분</Text><Text style={styles.storePerk}>예시 혜택 · {store.perk}</Text></View>
+    <View style={{ flex: 1, gap: 5 }}><Text style={styles.storeName}>{store.name}</Text><Text style={styles.storeInfo}>{store.category} · 도보 약 {store.walkMinutes}분</Text><Text style={styles.storePerk}>{store.perk}</Text></View>
     <Text style={{ color: ORANGE, fontSize: 20 }}>›</Text>
   </Pressable>;
 }

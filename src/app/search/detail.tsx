@@ -39,8 +39,7 @@ export default function StoreDetailScreen() {
         <Text style={{ color: UI.muted, fontSize: 13 }}>{BRANCHES[store.branchId].name}에서 도보 약 {store.walkMinutes}분</Text>
       </View>
       <View style={{ borderColor: '#b8b2ac', borderWidth: 1, borderRadius: 15, padding: 17, gap: 6 }}>
-        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 17 }}>예시 혜택 · {store.perk}</Text>
-        <Text style={{ color: UI.muted, fontSize: 13 }}>실제 할인 없음 · 앱 내 인증 전용</Text>
+        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 17 }}>{store.perk}</Text>
       </View>
       <View style={{ backgroundColor: UI.background, borderRadius: 15, padding: 16, gap: 7 }}>
         <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold' }}>찾아가는 길 · 도보 약 {store.walkMinutes}분</Text>

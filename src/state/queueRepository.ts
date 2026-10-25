@@ -47,9 +47,11 @@ function restoreQueue(value: unknown): QueueState {
   const raw = value as Partial<QueueState>;
   const queueCounts = { ...initial.queueCounts };
   const nextTicketNumbers = { ...initial.nextTicketNumbers };
+  const blockedUntil = { ...initial.blockedUntil };
   for (const id of BRANCH_IDS) {
     queueCounts[id] = nonNegative(raw.queueCounts?.[id], 0);
     nextTicketNumbers[id] = Math.max(1, nonNegative(raw.nextTicketNumbers?.[id], 1));
+    blockedUntil[id] = nonNegative(raw.blockedUntil?.[id], 0);
   }
   const candidate = raw.wait as Partial<WaitSession> | null | undefined;
   const wait = candidate && isBranchId(candidate.branchId)
@@ -63,6 +65,7 @@ function restoreQueue(value: unknown): QueueState {
     selectedBranchId: isBranchId(raw.selectedBranchId) ? raw.selectedBranchId : 'main',
     queueCounts,
     nextTicketNumbers,
+    blockedUntil,
     wait,
     usedEntryCodes: Array.isArray(raw.usedEntryCodes) ? raw.usedEntryCodes.filter((code): code is string => typeof code === 'string') : [],
   };
@@ -89,7 +92,7 @@ export function restoreAppState(raw: string | null, now = Date.now()): AppState 
       existingCodes.add(coupon.code);
       return [{
         code: coupon.code, storeId: coupon.storeId, waitId: coupon.waitId,
-        title: '이전 앱 쿠폰', condition: '이전 앱 내 기록 · 실제 할인 없음',
+        title: '이전 앱 쿠폰', condition: '',
         issuedAt: nonNegative(coupon.issuedAt, now),
         expiresAt: usedAt >= 0 ? expiry : Math.min(expiry, now),
         ...(usedAt >= 0 ? { usedAt } : {}),

@@ -4,7 +4,7 @@ import { Alert, Image, ScrollView, Text, View, useWindowDimensions } from 'react
 import { useTabBarMetrics } from '../components/tabBarMetrics';
 import { Button, Chip, QueueLeaveCheck, SectionTitle, SharedConnectionNotice, StoreCard, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
-import { BRANCH_IDS, estimateQueueWait } from '../domain/queue';
+import { BRANCH_IDS, estimateQueueWait, queueRestrictionUntil, restrictionEndLabel } from '../domain/queue';
 import { homeView } from '../domain/homeView';
 import { joinAndOpenQueue } from '../flows/join';
 import { images } from '../design/assets';
@@ -18,7 +18,7 @@ const branchPhotos = {
 };
 
 export default function HomeScreen() {
-  const { state, connection, join, selectBranch, cancel } = useDemo();
+  const { state, now, connection, join, selectBranch, cancel } = useDemo();
   const [leaveAllowed, setLeaveAllowed] = useState(false);
   const [joining, setJoining] = useState(false);
   const [message, setMessage] = useState('');
@@ -29,6 +29,7 @@ export default function HomeScreen() {
   const wait = state.queue.wait;
   const active = overview.activeWait;
   const waitEstimate = estimateQueueWait(state.queue);
+  const restrictedUntil = queueRestrictionUntil(state.queue, selectedId, now);
   const branch = BRANCHES[active?.branchId ?? selectedId];
   const shops = overview.stores;
 
@@ -59,8 +60,8 @@ export default function HomeScreen() {
         </View>
       </View>
       {!active && <View style={{ gap: 9 }}>
-        <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
-        <Button label={`${BRANCHES[selectedId].name} 줄서기`} disabled={!leaveAllowed || joining || (connection.mode !== 'local' && (connection.mode !== 'customer' || connection.status !== 'connected'))} onPress={async () => {
+        {restrictedUntil ? <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold', fontSize: 13 }}>{restrictionEndLabel(restrictedUntil)}까지 이 지점의 줄서기를 이용할 수 없어요.</Text> : <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />}
+        <Button label={`${BRANCHES[selectedId].name} 줄서기`} disabled={!!restrictedUntil || !leaveAllowed || joining || (connection.mode !== 'local' && (connection.mode !== 'customer' || connection.status !== 'connected'))} onPress={async () => {
           setJoining(true);
           try {
             const reason = await joinAndOpenQueue(() => join(selectedId, leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
@@ -70,7 +71,12 @@ export default function HomeScreen() {
       </View>}
       {active && <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5, paddingVertical: 5 }}>
         <Text onPress={() => active.peopleAhead === 0 ? router.push('/wallet') : router.dismissTo('/schedule')} style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{active.peopleAhead === 0 ? '입장 QR 보기 ›' : '내 줄서기 보기 ›'}</Text>
-        <Text onPress={() => Alert.alert('줄서기 취소', '줄서기를 취소할까요?', [{ text: '아니요', style: 'cancel' }, { text: '취소하기', style: 'destructive', onPress: async () => { const reason = await cancel(); setMessage(reason ?? '줄서기를 취소했어요'); } }])} style={{ color: UI.muted, textDecorationLine: 'underline' }}>줄서기 취소</Text>
+        <Text onPress={() => Alert.alert('줄서기 취소', `${BRANCHES[active.branchId].name}의 줄서기를 취소하면 3개월 동안 이 지점에 다시 줄설 수 없습니다. 취소할까요?`, [{ text: '아니요', style: 'cancel' }, { text: '취소하기', style: 'destructive', onPress: async () => {
+          const result = await cancel();
+          if (result.reason) { setMessage(result.reason); return; }
+          setMessage('');
+          Alert.alert('이용 제한 안내', `${BRANCHES[active.branchId].name}은 ${result.restrictedUntil ? `${restrictionEndLabel(result.restrictedUntil)}까지` : '3개월 동안'} 줄서기를 이용할 수 없습니다.`);
+        } }])} style={{ color: UI.muted, textDecorationLine: 'underline' }}>줄서기 취소</Text>
       </View>}
       {wait?.status === 'completed' && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>입장 인증 완료</Text>}
       {!!message && <Text style={{ color: UI.orange, fontSize: 13 }}>{message}</Text>}

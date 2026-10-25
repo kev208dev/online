@@ -64,3 +64,16 @@ test('unconsented joins, unauthorized actions, and malformed branch/store inputs
     assert.equal(result.state, state);
   }
 });
+
+test('shared cancellation restricts only the cancelled branch for three months', () => {
+  const cancelledAt = Date.UTC(2026, 0, 31, 12);
+  let state = act(createSharedState(), 'customer', { type: 'join', branchId: 'main', acceptedTerms: true }, cancelledAt - 1).state;
+  const cancelled = act(state, 'customer', { type: 'cancel' }, cancelledAt);
+  state = cancelled.state;
+  assert.equal(state.queue.blockedUntil.main, Date.UTC(2026, 3, 30, 12));
+  assert.equal(cancelled.result?.restrictedUntil, Date.UTC(2026, 3, 30, 12));
+  const denied = applyAction(state, 'customer', { type: 'join', branchId: 'main', acceptedTerms: true }, cancelledAt + 1);
+  assert.match(denied.reason, /3개월/);
+  assert.equal(denied.state, state);
+  assert.equal(act(state, 'customer', { type: 'join', branchId: 'dcc', acceptedTerms: true }, cancelledAt + 1).state.queue.wait.branchId, 'dcc');
+});

@@ -75,7 +75,12 @@ export function createLanService({ dataPath, host = '0.0.0.0', port = 8787, now 
       if (parsed?.version !== 1 || !parsed.shared?.queue || !parsed.shared?.commerce || !parsed.sessions || !parsed.pairing) {
         throw new Error('서버 저장 파일을 확인해 주세요');
       }
-      return parsed;
+      const blockedUntil = createSharedState().queue.blockedUntil;
+      for (const branchId of Object.keys(blockedUntil)) {
+        const value = parsed.shared.queue.blockedUntil?.[branchId];
+        blockedUntil[branchId] = Number.isSafeInteger(value) && value >= 0 ? value : 0;
+      }
+      return { ...parsed, shared: { ...parsed.shared, queue: { ...parsed.shared.queue, blockedUntil } } };
     } catch (error) {
       if (error?.code !== 'ENOENT') throw error;
       const initial = freshRecord(now());
