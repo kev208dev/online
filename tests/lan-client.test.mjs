@@ -31,6 +31,15 @@ test('pairing and authenticated requests send only the required code or role tok
   assert.equal(calls[1].url, 'http://192.168.0.12:8787/state');
 });
 
+test('pairing sends the chosen role with its code', async () => {
+  let sent;
+  await pairLan('192.168.0.12:8787', 'merchant-code', async (_url, options) => {
+    sent = JSON.parse(options.body);
+    return { ok: true, status: 200, json: async () => ({ role: 'merchant', token: 'token', state: { queue: {}, commerce: {} } }) };
+  }, 5000, 'merchant');
+  assert.deepEqual(sent, { code: 'merchant-code', role: 'merchant' });
+});
+
 test('revoked session and failed network writes never return a changed state', async () => {
   const denied = createLanClient('http://192.168.0.12:8787', 'old-token', async () => ({
     ok: false, status: 401, json: async () => ({ error: '다시 연결해 주세요' }),

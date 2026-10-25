@@ -64,9 +64,9 @@ async function send(baseUrl: string, path: string, method: 'GET' | 'POST', fetch
   return data;
 }
 
-export async function pairLan(baseUrl: string, code: string, fetchImpl: Fetcher = fetch, timeoutMs = 5000): Promise<{ role: LanRole; token: string; state: LanState }> {
+export async function pairLan(baseUrl: string, code: string, fetchImpl: Fetcher = fetch, timeoutMs = 5000, role?: LanRole): Promise<{ role: LanRole; token: string; state: LanState }> {
   if (!code.trim()) throw new LanError('연결 코드를 입력해 주세요', 'invalid');
-  const result = await send(normalizeLanUrl(baseUrl), '/pair', 'POST', fetchImpl, timeoutMs, { code: code.trim() }) as { role?: LanRole; token?: string; state?: LanState };
+  const result = await send(normalizeLanUrl(baseUrl), '/pair', 'POST', fetchImpl, timeoutMs, { code: code.trim(), ...(role ? { role } : {}) }) as { role?: LanRole; token?: string; state?: LanState };
   if ((result.role !== 'customer' && result.role !== 'merchant') || !result.token || !result.state?.queue || !result.state.commerce) {
     throw new LanError('서버 응답을 확인해 주세요', 'server');
   }

@@ -43,6 +43,10 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
   return <Pressable onPress={onPress} style={[styles.chip, selected && { backgroundColor: ORANGE, borderColor: ORANGE }]}><Text style={[styles.chipText, selected && { color: '#fff' }]}>{label}</Text></Pressable>;
 }
 export function Notice({ text }: { text: string }) { return <View style={styles.notice}><Text style={styles.noticeText}>{text}</Text></View>; }
+export function SharedConnectionNotice({ connection }: { connection: { mode: string; status: string } }) {
+  if (connection.mode === 'local' || connection.status === 'connected') return null;
+  return <Notice text={connection.status === 'revoked' ? '연결이 만료됐어요 · 설정에서 다시 연결해 주세요.' : '연결 끊김 · Mac과 Wi-Fi를 확인해 주세요.'} />;
+}
 export function Field({ value, onChangeText, placeholder, keyboardType = 'default', secureTextEntry = false, autoCapitalize = 'sentences' }: { value: string; onChangeText: (value: string) => void; placeholder: string; keyboardType?: 'default' | 'number-pad'; secureTextEntry?: boolean; autoCapitalize?: 'none' | 'sentences' }) {
   return <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} keyboardType={keyboardType} secureTextEntry={secureTextEntry} autoCapitalize={autoCapitalize} style={styles.input} placeholderTextColor="#9d958f" />;
 }
@@ -50,7 +54,7 @@ export function StoreCard({ id, onPress }: { id: StoreId; onPress?: () => void }
   const store = STORES[id];
   return <Pressable onPress={onPress ?? (() => router.push({ pathname: '/search/detail', params: { id } }))} style={styles.store} accessibilityRole="button">
     <Image source={store.image} style={styles.storeImage} />
-    <View style={{ flex: 1, gap: 5 }}><Text style={styles.storeName}>{store.name}</Text><Text style={styles.storeInfo}>{store.category} · 도보 약 {store.walkMinutes}분</Text><Text style={styles.storePerk}>{store.perk}</Text></View>
+    <View style={{ flex: 1, gap: 5 }}><Text style={styles.storeName}>{store.name}</Text><Text style={styles.storeInfo}>{store.category} · 도보 약 {store.walkMinutes}분</Text><Text style={styles.storePerk}>예시 혜택 · {store.perk}</Text></View>
     <Text style={{ color: ORANGE, fontSize: 20 }}>›</Text>
   </Pressable>;
 }

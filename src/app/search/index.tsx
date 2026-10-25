@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DemoMap } from '../../components/DemoMap';
-import { Button, Chip, QueueLeaveCheck, SectionTitle, StoreCard, UI } from '../../components/ui';
+import { Button, Chip, QueueLeaveCheck, SectionTitle, SharedConnectionNotice, StoreCard, UI } from '../../components/ui';
 import { useTabBarMetrics } from '../../components/tabBarMetrics';
 import { BRANCHES } from '../../data/branches';
 import { storesForBranch } from '../../data/stores';
@@ -12,8 +12,9 @@ import { joinAndOpenQueue } from '../../flows/join';
 import { useDemo } from '../../state/demo';
 
 export default function SearchScreen() {
-  const { state, selectBranch, joinSelected } = useDemo();
+  const { state, connection, selectBranch, joinSelected } = useDemo();
   const [leaveAllowed, setLeaveAllowed] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [message, setMessage] = useState('');
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -28,6 +29,7 @@ export default function SearchScreen() {
     <View style={{ position: 'absolute', top: insets.top + 8, left: 20, backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 }}><Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[branchId].name}⌄</Text></View>
     <ScrollView style={{ flex: 1, marginTop: -21, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24 }} contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: tab.height + tab.bottom + 36, gap: 14 }}>
       <View style={{ width: 42, height: 4, borderRadius: 99, backgroundColor: '#ded9d4', alignSelf: 'center' }} />
+      <SharedConnectionNotice connection={connection} />
       <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 19 }}>{wait ? '현재 웨이팅 중이에요' : '주변 가게를 둘러보세요'}</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[branchId].name} · {wait ? `앞에 ${wait.peopleAhead}명` : `${state.queue.queueCounts[branchId]}명 대기`}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }} style={{ flexGrow: 0 }}>
@@ -38,9 +40,12 @@ export default function SearchScreen() {
         <Button label="내 줄서기 보기" secondary onPress={() => router.dismissTo('/schedule')} />
       </View> : <View style={{ gap: 8 }}>
         <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
-        <Button label={`${BRANCHES[branchId].name} 줄서기`} disabled={!leaveAllowed} onPress={() => {
-          const reason = joinAndOpenQueue(() => joinSelected(leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
-          if (reason) setMessage(reason);
+        <Button label={`${BRANCHES[branchId].name} 줄서기`} disabled={!leaveAllowed || joining || (connection.mode !== 'local' && (connection.mode !== 'customer' || connection.status !== 'connected'))} onPress={async () => {
+          setJoining(true);
+          try {
+            const reason = await joinAndOpenQueue(() => joinSelected(leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
+            if (reason) setMessage(reason);
+          } finally { setJoining(false); }
         }} />
       </View>}
       {!!message && <Text style={{ color: UI.orange, fontSize: 13 }}>{message}</Text>}

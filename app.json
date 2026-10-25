@@ -11,7 +11,7 @@
       "supportsTablet": false,
       "appleTeamId": "822CM9WZ7Z",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "같은 Wi-Fi의 Mac 시연 서버와 줄서기·쿠폰 상태를 공유합니다.",
+        "NSLocalNetworkUsageDescription": "같은 Wi-Fi의 Mac과 줄서기·쿠폰 상태를 공유합니다.",
         "NSAppTransportSecurity": { "NSAllowsLocalNetworking": true }
       }
     },

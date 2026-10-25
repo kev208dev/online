@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
 import { Text } from 'react-native';
-import { Button, Card, Screen, UI } from '../components/ui';
+import { Button, Card, Screen, SharedConnectionNotice, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
 import { useDemo } from '../state/demo';
 
 export default function QueueScreen() {
-  const { state } = useDemo();
+  const { state, connection } = useDemo();
   const wait = state.queue.wait;
   return <Screen title="내 줄서기">
+    <SharedConnectionNotice connection={connection} />
     {wait?.status === 'waiting' ? <Card>
       <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[wait.branchId].name}</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 28 }}>{wait.ticketNumber}번</Text>

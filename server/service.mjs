@@ -94,7 +94,7 @@ export function createLanService({ dataPath, host = '0.0.0.0', port = 8787, now 
       if (request.method === 'POST' && path === '/pair') {
         const input = await bodyOf(request);
         const answer = await enqueue(async () => {
-          const role = ROLES.find((candidate) => record.pairing[candidate]?.code === input.code
+          const role = ROLES.find((candidate) => (!input.role || input.role === candidate) && record.pairing[candidate]?.code === input.code
             && now() < record.pairing[candidate].expiresAt);
           if (!role) return null;
           const token = randomBytes(32).toString('base64url');

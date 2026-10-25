@@ -65,6 +65,15 @@ test('role checks, used codes, bad codes, and expired codes fail closed', async 
   assert.equal(JSON.stringify(state.body).includes(f.started.codes.merchant), false);
 });
 
+test('pairing with the wrong selected role does not consume the code', async (t) => {
+  const f = await fixture(t);
+  const wrong = await f.request('/pair', 'POST', { code: f.started.codes.merchant, role: 'customer' });
+  assert.equal(wrong.status, 401);
+  const merchant = await f.request('/pair', 'POST', { code: f.started.codes.merchant, role: 'merchant' });
+  assert.equal(merchant.status, 200);
+  assert.equal(merchant.body.role, 'merchant');
+});
+
 test('simultaneous coupon redemption commits exactly once', async (t) => {
   const f = await fixture(t);
   const customer = await f.pair(f.started.codes.customer);

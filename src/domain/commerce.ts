@@ -66,7 +66,7 @@ export function issueCoupon(state: CommerceState, queue: QueueState, storeId: St
   if (!code || state.coupons.some((coupon) => coupon.code === code)) return { state, reason: '새 인증 코드를 만들어 주세요' };
   if (state.coupons.some((coupon) => coupon.waitId === wait.id && coupon.storeId === storeId)) return { state, reason: '이미 발급한 쿠폰이 있어요' };
   const coupon: LocalCoupon = {
-    code, storeId, waitId: wait.id, title: '앱 내 방문 쿠폰',
+    code, storeId, waitId: wait.id, title: `예시 혜택 · ${STORE_CATALOG[storeId].exampleBenefit}`,
     condition: '앱 내 인증 전용 · 실제 할인 없음', issuedAt: now,
     expiresAt: now + COUPON_LIFETIME_MS,
   };
@@ -76,7 +76,7 @@ export function issueCoupon(state: CommerceState, queue: QueueState, storeId: St
 export function redeemCoupon(state: CommerceState, storeId: StoreId, rawCode: string, now = Date.now()): CommerceChange {
   const code = rawCode.trim();
   const coupon = state.coupons.find((item) => item.code === code);
-  if (!coupon) return { state, reason: '이 기기에서 발급한 쿠폰이 아니에요' };
+  if (!coupon) return { state, reason: '발급 내역에 없는 쿠폰이에요' };
   if (coupon.storeId !== storeId) return { state, reason: '다른 매장 쿠폰이에요' };
   if (coupon.usedAt !== undefined) return { state, reason: '이미 사용한 쿠폰이에요' };
   if (now >= coupon.expiresAt) return { state, reason: '유효기간이 지났어요' };

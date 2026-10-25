@@ -18,6 +18,7 @@
 - Only server state can authorize shared-mode writes. All changed endpoints require the correct role; PIN remains local to the merchant phone; token is in SecureStore.
 - On disconnection shared-mode mutations are disabled; do not fall back to the local repository. Branch selection remains device-local.
 - New consent copy is exact as in the spec, underlined in black, and the join button stays disabled until checked; consent permits the app's visit/coupon flow.
+- Store cards, detail and issued coupons show store-specific `예시 혜택` (for example, a free iced Americano or ₩2,000 off), never a confirmed partner promotion; coupon terms still say `실제 할인 없음`.
 - Do not push to GitHub without another request. Do not claim two-device testing unless two real iPhones were exercised.
 
 ## Review Focus
@@ -83,16 +84,16 @@
 ### Task 4: Shared-mode app flow and screens
 
 **Files:**
-- Modify: `src/state/demo.tsx`, `src/flows/join.ts`, `src/app/settings.tsx`, `src/app/index.tsx`, `src/app/search/index.tsx`, `src/app/search/detail.tsx`, `src/app/schedule.tsx`, `src/app/wallet.tsx`, `src/app/merchant.tsx`, `src/app/merchant-scanner.tsx`
-- Test: `tests/lan-flow.test.mjs`, `tests/join-navigation.test.mjs`
+- Modify: `src/state/demo.tsx`, `src/flows/join.ts`, `src/app/settings.tsx`, `src/app/index.tsx`, `src/app/search/index.tsx`, `src/app/search/detail.tsx`, `src/app/schedule.tsx`, `src/app/wallet.tsx`, `src/app/merchant.tsx`, `src/app/merchant-scanner.tsx`, `src/data/storeCatalog.ts`, `src/data/stores.ts`, `src/domain/commerce.ts`, `src/components/ui.tsx`
+- Test: `tests/lan-flow.test.mjs`, `tests/join-navigation.test.mjs`, `tests/store-benefits.test.mjs`
 
 **Interfaces:**
 - Consumes: Tasks 1–3 HTTP contract and client/session interfaces; existing `useDemo()` presentation contract.
 - Produces: `useDemo()` pairing status/actions (`connectCustomer`, `connectMerchant`, `disconnectLan`, `connection`), async server-backed join/cancel/count/advance/entry/coupon methods, polling every 1 second while foregrounded, and concise settings UI for Mac address/code/role/status.
 
-- [ ] **Step 1: Write failing tests** for shared join→advance→entry and coupon issuance→redemption across independent clients; rejected/revoked/offline calls must leave presentation state unchanged; selecting a different branch must retain the active wait branch and coupon scope. Update navigation test for async join.
+- [ ] **Step 1: Write failing tests** for shared join→advance→entry and coupon issuance→redemption across independent clients; rejected/revoked/offline calls must leave presentation state unchanged; selecting a different branch must retain the active wait branch and coupon scope. Test that every store has a concrete example benefit and issued coupons snapshot that store's label while retaining `실제 할인 없음`. Update navigation test for async join.
 - [ ] **Step 2: Run** `node --experimental-strip-types --test tests/lan-flow.test.mjs tests/join-navigation.test.mjs`; **Expected:** FAIL because shared-mode flow is missing.
-- [ ] **Step 3: Integrate** server-backed operations into the provider without persisting server queue/commerce locally. Render connection status and role in settings, refuse actions while offline, and keep merchant PIN gate on both manual and scanner paths. Update async button callbacks with pending/disabled states and remove the outdated `이 기기에서만 인증` copy in shared mode.
+- [ ] **Step 3: Integrate** server-backed operations into the provider without persisting server queue/commerce locally. Render connection status and role in settings, refuse actions while offline, and keep merchant PIN gate on both manual and scanner paths. Update async button callbacks with pending/disabled states. Replace generic coupon labels in cards/detail/wallet with store-specific example-benefit copy and remove the outdated `이 기기에서만 인증` copy in shared mode.
 - [ ] **Step 4: Run** focused flow tests, `npm test`, `npm run typecheck`, `npm run lint`; **Expected:** all PASS.
 - [ ] **Step 5: Commit** as `feat: link customer and merchant phones over LAN`.
 

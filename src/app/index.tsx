@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Image, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useTabBarMetrics } from '../components/tabBarMetrics';
-import { Button, Chip, QueueLeaveCheck, SectionTitle, StoreCard, UI } from '../components/ui';
+import { Button, Chip, QueueLeaveCheck, SectionTitle, SharedConnectionNotice, StoreCard, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
 import { BRANCH_IDS } from '../domain/queue';
 import { homeView } from '../domain/homeView';
@@ -18,8 +18,9 @@ const branchPhotos = {
 };
 
 export default function HomeScreen() {
-  const { state, join, selectBranch, cancel } = useDemo();
+  const { state, connection, join, selectBranch, cancel } = useDemo();
   const [leaveAllowed, setLeaveAllowed] = useState(false);
+  const [joining, setJoining] = useState(false);
   const [message, setMessage] = useState('');
   const { width } = useWindowDimensions();
   const tab = useTabBarMetrics();
@@ -35,6 +36,7 @@ export default function HomeScreen() {
       <Image source={branchPhotos[selectedId]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
     </View>
     <View style={{ paddingHorizontal: 24, paddingTop: 17, gap: 15 }}>
+      <SharedConnectionNotice connection={connection} />
       <View style={{ gap: 4 }}>
         <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 19 }}>{BRANCHES[selectedId].name}</Text>
         <Text style={{ color: UI.muted, fontSize: 13 }}>📍 {BRANCHES[selectedId].address}</Text>
@@ -56,14 +58,17 @@ export default function HomeScreen() {
       </View>
       {!active && <View style={{ gap: 9 }}>
         <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
-        <Button label={`${BRANCHES[selectedId].name} 줄서기`} disabled={!leaveAllowed} onPress={() => {
-          const reason = joinAndOpenQueue(() => join(selectedId, leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
-          if (reason) setMessage(reason);
+        <Button label={`${BRANCHES[selectedId].name} 줄서기`} disabled={!leaveAllowed || joining || (connection.mode !== 'local' && (connection.mode !== 'customer' || connection.status !== 'connected'))} onPress={async () => {
+          setJoining(true);
+          try {
+            const reason = await joinAndOpenQueue(() => join(selectedId, leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
+            if (reason) setMessage(reason);
+          } finally { setJoining(false); }
         }} />
       </View>}
       {active && <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5, paddingVertical: 5 }}>
         <Text onPress={() => active.peopleAhead === 0 ? router.push('/wallet') : router.dismissTo('/schedule')} style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{active.peopleAhead === 0 ? '입장 QR 보기 ›' : '내 줄서기 보기 ›'}</Text>
-        <Text onPress={() => Alert.alert('줄서기 취소', '이 기기의 줄서기를 취소할까요?', [{ text: '아니요', style: 'cancel' }, { text: '취소하기', style: 'destructive', onPress: () => { cancel(); setMessage('줄서기를 취소했어요'); } }])} style={{ color: UI.muted, textDecorationLine: 'underline' }}>줄서기 취소</Text>
+        <Text onPress={() => Alert.alert('줄서기 취소', '줄서기를 취소할까요?', [{ text: '아니요', style: 'cancel' }, { text: '취소하기', style: 'destructive', onPress: async () => { const reason = await cancel(); setMessage(reason ?? '줄서기를 취소했어요'); } }])} style={{ color: UI.muted, textDecorationLine: 'underline' }}>줄서기 취소</Text>
       </View>}
       {wait?.status === 'completed' && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>입장 인증 완료</Text>}
       {!!message && <Text style={{ color: UI.orange, fontSize: 13 }}>{message}</Text>}
