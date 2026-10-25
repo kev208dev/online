@@ -11,7 +11,7 @@ export default function WalletScreen() {
   const { state, now } = useDemo();
   const wait = state.queue.wait;
   const coupons = [...state.commerce.coupons].sort((a, b) => b.issuedAt - a.issuedAt);
-  return <Screen title="내 쿠폰·입장 QR" subtitle="체험용" back>
+  return <Screen title="내 쿠폰·입장 QR" back>
     {wait?.status === 'waiting' && wait.peopleAhead === 0 && <Card>
       <Text style={{ color: UI.orange, fontFamily: 'Pretendard-Bold', fontSize: 20 }}>입장할 차례예요!</Text>
       <Text style={{ color: UI.ink, fontFamily: 'Pretendard-SemiBold' }}>{BRANCHES[wait.branchId].name} · {wait.ticketNumber}번</Text>
@@ -25,8 +25,8 @@ export default function WalletScreen() {
       const status = coupon.usedAt ? '사용 완료' : coupon.expiresAt <= now ? '만료' : '사용 가능';
       return <Card key={coupon.code} style={code === coupon.code ? { borderColor: UI.orange, borderWidth: 2 } : undefined}>
         <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{STORES[coupon.storeId].name} · {status}</Text>
-        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 20 }}>{coupon.title}</Text>
-        <Text style={{ color: UI.muted, fontSize: 12 }}>{coupon.condition}</Text>
+        <Text style={{ color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 20 }}>앱 내 방문 쿠폰</Text>
+        <Text style={{ color: UI.muted, fontSize: 12 }}>앱 내 인증 전용 · 실제 할인 없음</Text>
         {status === '사용 가능' && <View style={{ alignItems: 'center', paddingVertical: 12 }}><QRCode value={coupon.code} size={205} color={UI.ink} backgroundColor="#fff" /></View>}
         <Text selectable style={{ color: UI.muted, fontSize: 11, textAlign: 'center' }}>{coupon.code}</Text>
       </Card>;

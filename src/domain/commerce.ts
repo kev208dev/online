@@ -66,7 +66,7 @@ export function issueCoupon(state: CommerceState, queue: QueueState, storeId: St
   if (!code || state.coupons.some((coupon) => coupon.code === code)) return { state, reason: '새 인증 코드를 만들어 주세요' };
   if (state.coupons.some((coupon) => coupon.waitId === wait.id && coupon.storeId === storeId)) return { state, reason: '이미 발급한 쿠폰이 있어요' };
   const coupon: LocalCoupon = {
-    code, storeId, waitId: wait.id, title: '체험용 방문 쿠폰',
+    code, storeId, waitId: wait.id, title: '앱 내 방문 쿠폰',
     condition: '앱 내 인증 전용 · 실제 할인 없음', issuedAt: now,
     expiresAt: now + COUPON_LIFETIME_MS,
   };

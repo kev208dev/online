@@ -89,7 +89,7 @@ export function restoreAppState(raw: string | null, now = Date.now()): AppState 
       existingCodes.add(coupon.code);
       return [{
         code: coupon.code, storeId: coupon.storeId, waitId: coupon.waitId,
-        title: '이전 체험 쿠폰', condition: '이전 앱 내 기록 · 실제 할인 없음',
+        title: '이전 앱 쿠폰', condition: '이전 앱 내 기록 · 실제 할인 없음',
         issuedAt: nonNegative(coupon.issuedAt, now),
         expiresAt: usedAt >= 0 ? expiry : Math.min(expiry, now),
         ...(usedAt >= 0 ? { usedAt } : {}),

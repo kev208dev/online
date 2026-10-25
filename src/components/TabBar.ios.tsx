@@ -9,7 +9,7 @@ import { useTabBarMetrics } from './tabBarMetrics';
 const TABS = [
   { label: '홈', symbol: 'house.fill', path: '/' },
   { label: '검색', symbol: 'magnifyingglass', path: '/search' },
-  { label: '일정', symbol: 'calendar', path: '/schedule' },
+  { label: '줄서기', symbol: 'number', path: '/schedule' },
   { label: '설정', symbol: 'gearshape', path: '/settings' },
 ] as const;
 

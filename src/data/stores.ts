@@ -22,7 +22,7 @@ export const STORES: Record<StoreId, Store> = Object.fromEntries(STORE_IDS.map((
     ...listing,
     image: FIGMA_PHOTOS[id] ?? images.map,
     stay: `${listing.stayMinutes}분 내외`,
-    perk: '체험용 방문 쿠폰',
+    perk: '앱 내 방문 쿠폰',
   }];
 })) as Record<StoreId, Store>;
 

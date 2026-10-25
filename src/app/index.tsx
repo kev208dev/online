@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useTabBarMetrics } from '../components/tabBarMetrics';
-import { Button, Chip, SectionTitle, StoreCard, UI } from '../components/ui';
+import { Button, Chip, QueueLeaveCheck, SectionTitle, StoreCard, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
 import { BRANCH_IDS } from '../domain/queue';
 import { homeView } from '../domain/homeView';
+import { joinAndOpenQueue } from '../flows/join';
 import { images } from '../design/assets';
 import { useDemo } from '../state/demo';
 
@@ -32,7 +33,6 @@ export default function HomeScreen() {
   return <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ paddingBottom: tab.height + tab.bottom + 36 }}>
     <View style={{ width, height: Math.min(360, width * 0.9), backgroundColor: '#f4ede5' }}>
       <Image source={branchPhotos[selectedId]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-      <Text style={{ position: 'absolute', right: 18, bottom: 16, color: '#fff', backgroundColor: UI.orange, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, fontSize: 12 }}>체험용</Text>
     </View>
     <View style={{ paddingHorizontal: 24, paddingTop: 17, gap: 15 }}>
       <View style={{ gap: 4 }}>
@@ -55,11 +55,14 @@ export default function HomeScreen() {
         </View>
       </View>
       {!active && <View style={{ gap: 9 }}>
-        <Pressable onPress={() => setLeaveAllowed(!leaveAllowed)} accessibilityRole="checkbox" accessibilityState={{ checked: leaveAllowed }} style={{ paddingVertical: 4 }}><Text style={{ color: UI.ink, fontSize: 13 }}>{leaveAllowed ? '☑' : '☐'} 현장에서 대기줄 이탈 가능 여부를 확인했어요</Text></Pressable>
-        <Button label={`${BRANCHES[selectedId].name} 줄서기`} onPress={() => setMessage(join(selectedId, leaveAllowed) ?? '줄서기를 시작했어요')} />
+        <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
+        <Button label={`${BRANCHES[selectedId].name} 줄서기`} onPress={() => {
+          const reason = joinAndOpenQueue(() => join(selectedId, leaveAllowed), (path) => router.dismissTo(path));
+          if (reason) setMessage(reason);
+        }} />
       </View>}
       {active && <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5, paddingVertical: 5 }}>
-        <Text onPress={() => router.push(active.peopleAhead === 0 ? '/wallet' : '/schedule')} style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{active.peopleAhead === 0 ? '입장 QR 보기 ›' : '내 일정 보기 ›'}</Text>
+        <Text onPress={() => active.peopleAhead === 0 ? router.push('/wallet') : router.dismissTo('/schedule')} style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{active.peopleAhead === 0 ? '입장 QR 보기 ›' : '내 줄서기 보기 ›'}</Text>
         <Text onPress={() => Alert.alert('줄서기 취소', '이 기기의 줄서기를 취소할까요?', [{ text: '아니요', style: 'cancel' }, { text: '취소하기', style: 'destructive', onPress: () => { cancel(); setMessage('줄서기를 취소했어요'); } }])} style={{ color: UI.muted, textDecorationLine: 'underline' }}>줄서기 취소</Text>
       </View>}
       {wait?.status === 'completed' && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>입장 인증 완료</Text>}

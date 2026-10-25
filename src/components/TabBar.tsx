@@ -6,7 +6,7 @@ import { useTabBarMetrics } from './tabBarMetrics';
 const tabs = [
   { label: '홈', icon: '⌂', path: '/' },
   { label: '검색', icon: '⌕', path: '/search' },
-  { label: '일정', icon: '▦', path: '/schedule' },
+  { label: '줄서기', icon: '♯', path: '/schedule' },
   { label: '설정', icon: '⚙', path: '/settings' },
 ] as const;
 export function TabBar() {

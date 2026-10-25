@@ -27,6 +27,14 @@ export function Button({ label, onPress, secondary = false, disabled = false }: 
     <Text style={[styles.buttonText, secondary && { color: ORANGE }]}>{label}</Text>
   </Pressable>;
 }
+export function QueueLeaveCheck({ checked, onPress }: { checked: boolean; onPress: () => void }) {
+  return <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked }} style={styles.queueLeaveCheck}>
+    <View style={[styles.queueLeaveBox, checked && styles.queueLeaveBoxChecked]}>
+      {checked && <Text style={styles.queueLeaveMark}>✓</Text>}
+    </View>
+    <Text style={styles.queueLeaveText}>현장에서 대기줄 이탈 가능 여부를 확인했어요</Text>
+  </Pressable>;
+}
 export function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return <Pressable onPress={onPress} style={[styles.chip, selected && { backgroundColor: ORANGE, borderColor: ORANGE }]}><Text style={[styles.chipText, selected && { color: '#fff' }]}>{label}</Text></Pressable>;
 }
@@ -52,6 +60,11 @@ const styles = StyleSheet.create({
   button: { minHeight: 52, borderRadius: 16, backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   secondary: { backgroundColor: '#fff', borderColor: ORANGE, borderWidth: 1.5 },
   buttonText: { color: '#fff', fontFamily: 'Pretendard-SemiBold', fontSize: 16, textAlign: 'center' },
+  queueLeaveCheck: { minHeight: 54, borderRadius: 14, borderWidth: 1.5, borderColor: ORANGE, backgroundColor: UI.pale, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  queueLeaveBox: { width: 25, height: 25, borderRadius: 6, borderWidth: 2, borderColor: ORANGE, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
+  queueLeaveBoxChecked: { backgroundColor: ORANGE },
+  queueLeaveMark: { color: '#fff', fontSize: 18, fontFamily: 'Pretendard-Bold', lineHeight: 21 },
+  queueLeaveText: { flex: 1, color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 13, lineHeight: 19, textDecorationLine: 'underline', textDecorationColor: ORANGE },
   chip: { borderRadius: 999, borderWidth: 1, borderColor: UI.line, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#fff' },
   chipText: { color: UI.ink, fontFamily: 'Pretendard-Medium', fontSize: 13 },
   notice: { backgroundColor: UI.pale, borderRadius: 14, padding: 14 },

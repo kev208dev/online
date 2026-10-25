@@ -13,7 +13,7 @@ export default function NearbyScreen() {
   const [category, setCategory] = useState<Category | '전체'>('전체');
   const branchId = state.queue.selectedBranchId;
   const rows = storesForBranch(branchId).filter((store) => (category === '전체' || store.category === category) && store.name.includes(query.trim()));
-  return <Screen title="주변 가게" subtitle="체험용" back>
+  return <Screen title="주변 가게" back>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 7 }} style={{ flexGrow: 0 }}>
       {BRANCH_IDS.map((id) => <Chip key={id} label={BRANCHES[id].name.replace('성심당 ', '')} selected={branchId === id} onPress={() => selectBranch(id)} />)}
     </ScrollView>
