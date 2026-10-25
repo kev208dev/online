@@ -56,8 +56,8 @@ export default function HomeScreen() {
       </View>
       {!active && <View style={{ gap: 9 }}>
         <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
-        <Button label={`${BRANCHES[selectedId].name} 줄서기`} onPress={() => {
-          const reason = joinAndOpenQueue(() => join(selectedId, leaveAllowed), (path) => router.dismissTo(path));
+        <Button label={`${BRANCHES[selectedId].name} 줄서기`} disabled={!leaveAllowed} onPress={() => {
+          const reason = joinAndOpenQueue(() => join(selectedId, leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
           if (reason) setMessage(reason);
         }} />
       </View>}

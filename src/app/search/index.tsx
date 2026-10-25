@@ -38,8 +38,8 @@ export default function SearchScreen() {
         <Button label="내 줄서기 보기" secondary onPress={() => router.dismissTo('/schedule')} />
       </View> : <View style={{ gap: 8 }}>
         <QueueLeaveCheck checked={leaveAllowed} onPress={() => setLeaveAllowed(!leaveAllowed)} />
-        <Button label={`${BRANCHES[branchId].name} 줄서기`} onPress={() => {
-          const reason = joinAndOpenQueue(() => joinSelected(leaveAllowed), (path) => router.dismissTo(path));
+        <Button label={`${BRANCHES[branchId].name} 줄서기`} disabled={!leaveAllowed} onPress={() => {
+          const reason = joinAndOpenQueue(() => joinSelected(leaveAllowed), (path) => router.dismissTo(path), leaveAllowed);
           if (reason) setMessage(reason);
         }} />
       </View>}

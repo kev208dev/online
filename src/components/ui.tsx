@@ -28,12 +28,16 @@ export function Button({ label, onPress, secondary = false, disabled = false }: 
   </Pressable>;
 }
 export function QueueLeaveCheck({ checked, onPress }: { checked: boolean; onPress: () => void }) {
-  return <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked }} style={styles.queueLeaveCheck}>
-    <View style={[styles.queueLeaveBox, checked && styles.queueLeaveBoxChecked]}>
-      {checked && <Text style={styles.queueLeaveMark}>✓</Text>}
-    </View>
-    <Text style={styles.queueLeaveText}>현장에서 대기줄 이탈 가능 여부를 확인했어요</Text>
-  </Pressable>;
+  return <View style={styles.queueLeaveCheck}>
+    <Text style={styles.queueLeaveHeading}>[필수] 대기 이탈 시 이용 제한 동의</Text>
+    <Text style={styles.queueLeaveDescription}>사전 취소 없이 대기를 이탈하거나, 입장 호출 후 안내된 시간 내에 입장하지 않을 경우 대기가 취소되며 사전에 고지된 운영 기준에 따라 서비스 이용이 제한될 수 있습니다.</Text>
+    <Pressable onPress={onPress} accessibilityRole="checkbox" accessibilityState={{ checked }} accessibilityLabel="위 내용을 확인했으며, 대기 이탈 및 미입장 시 이용 제한 조치에 동의합니다." style={styles.queueLeaveRow}>
+      <View style={[styles.queueLeaveBox, checked && styles.queueLeaveBoxChecked]}>
+        {checked && <Text style={styles.queueLeaveMark}>✓</Text>}
+      </View>
+      <Text style={styles.queueLeaveText}>위 내용을 확인했으며, 대기 이탈 및 미입장 시 이용 제한 조치에 동의합니다.</Text>
+    </Pressable>
+  </View>;
 }
 export function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return <Pressable onPress={onPress} style={[styles.chip, selected && { backgroundColor: ORANGE, borderColor: ORANGE }]}><Text style={[styles.chipText, selected && { color: '#fff' }]}>{label}</Text></Pressable>;
@@ -60,11 +64,14 @@ const styles = StyleSheet.create({
   button: { minHeight: 52, borderRadius: 16, backgroundColor: ORANGE, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   secondary: { backgroundColor: '#fff', borderColor: ORANGE, borderWidth: 1.5 },
   buttonText: { color: '#fff', fontFamily: 'Pretendard-SemiBold', fontSize: 16, textAlign: 'center' },
-  queueLeaveCheck: { minHeight: 54, borderRadius: 14, borderWidth: 1.5, borderColor: ORANGE, backgroundColor: UI.pale, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  queueLeaveCheck: { borderRadius: 14, borderWidth: 1.5, borderColor: ORANGE, backgroundColor: UI.pale, padding: 14, gap: 10 },
+  queueLeaveHeading: { color: UI.ink, fontFamily: 'Pretendard-Bold', fontSize: 15, lineHeight: 21 },
+  queueLeaveDescription: { color: UI.ink, fontFamily: 'Pretendard-Regular', fontSize: 12, lineHeight: 19 },
+  queueLeaveRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 10 },
   queueLeaveBox: { width: 25, height: 25, borderRadius: 6, borderWidth: 2, borderColor: ORANGE, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   queueLeaveBoxChecked: { backgroundColor: ORANGE },
   queueLeaveMark: { color: '#fff', fontSize: 18, fontFamily: 'Pretendard-Bold', lineHeight: 21 },
-  queueLeaveText: { flex: 1, color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 13, lineHeight: 19, textDecorationLine: 'underline', textDecorationColor: ORANGE },
+  queueLeaveText: { flex: 1, color: UI.ink, fontFamily: 'Pretendard-SemiBold', fontSize: 13, lineHeight: 19, textDecorationLine: 'underline', textDecorationColor: '#000000' },
   chip: { borderRadius: 999, borderWidth: 1, borderColor: UI.line, paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#fff' },
   chipText: { color: UI.ink, fontFamily: 'Pretendard-Medium', fontSize: 13 },
   notice: { backgroundColor: UI.pale, borderRadius: 14, padding: 14 },
