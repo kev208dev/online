@@ -49,6 +49,9 @@ export const icons = {
 
 export const images = {
   sungsimdang: require('../../assets/images/sungsimdang.png'),
+  sungsimdangStation: require('../../assets/images/sungsimdang-station.png'),
+  sungsimdangDcc: require('../../assets/images/sungsimdang-dcc.png'),
+  sungsimdangLotte: require('../../assets/images/sungsimdang-lotte.png'),
   madeby: require('../../assets/images/madeby.png'),
   dadareuda: require('../../assets/images/dadareuda.png'),
   redbutton: require('../../assets/images/redbutton.png'),

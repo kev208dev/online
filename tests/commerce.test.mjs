@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createQueueState, joinQueue, selectBranch, setQueueCount } from '../src/domain/queue.ts';
 import { STORE_CATALOG, storesForBranch } from '../src/data/storeCatalog.ts';
-import { createCommerceState, addStop, issueCoupon, redeemCoupon, expireCoupons } from '../src/domain/commerce.ts';
+import { createCommerceState, addStop, issueCoupon, redeemCoupon, expireCoupons, toggleVisited } from '../src/domain/commerce.ts';
 
 const now = 1_800_000_000_000;
 function waiting(branchId = 'main') {
@@ -45,4 +45,13 @@ test('coupon issuance, use, expiry and duplicates are confined to active wait an
 test('a wait without permission to leave cannot issue a coupon', () => {
   const queue = joinQueue(createQueueState(), 'main', false, 'ENTRY-1', now).state;
   assert.equal(issueCoupon(createCommerceState(), queue, 'madeby', 'C1', now).reason, '현장 대기 규칙을 확인해 주세요');
+});
+
+test('visit completion only applies to planned stores and can be toggled', () => {
+  const { queue, commerce } = waiting();
+  const planned = addStop(commerce, queue, 'madeby').state;
+  assert.deepEqual(toggleVisited(planned, 'dadareuda').visited, []);
+  const visited = toggleVisited(planned, 'madeby');
+  assert.deepEqual(visited.visited, ['madeby']);
+  assert.deepEqual(toggleVisited(visited, 'madeby').visited, []);
 });

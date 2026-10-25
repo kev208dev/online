@@ -14,6 +14,7 @@ import {
 import {
   addStop as addLocalStop, expireCoupons, issueCoupon as issueLocalCoupon,
   moveStop as moveLocalStop, redeemCoupon as redeemLocalCoupon, removeStop as removeLocalStop,
+  toggleVisited as toggleLocalVisited,
   type CommerceChange,
 } from '../domain/commerce';
 import type { StoreId } from '../data/storeCatalog';
@@ -39,6 +40,7 @@ type Api = {
   addLocal: (id: StoreId) => string | undefined;
   removeLocal: (id: StoreId) => void;
   moveLocal: (id: StoreId, delta: -1 | 1) => void;
+  visitLocal: (id: StoreId) => void;
   issueLocal: (id: StoreId) => CommerceChange;
   redeemLocal: (id: StoreId, code: string) => string | undefined;
   start: (minutes: number, leaveAllowed: boolean) => string | undefined;
@@ -140,6 +142,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [replace]);
   const removeLocal = useCallback((id: StoreId) => replace({ ...live.current, commerce: removeLocalStop(live.current.commerce, id) }), [replace]);
   const moveLocal = useCallback((id: StoreId, delta: -1 | 1) => replace({ ...live.current, commerce: moveLocalStop(live.current.commerce, id, delta) }), [replace]);
+  const visitLocal = useCallback((id: StoreId) => replace({ ...live.current, commerce: toggleLocalVisited(live.current.commerce, id) }), [replace]);
   const issueLocal = useCallback((id: StoreId) => {
     const result = issueLocalCoupon(live.current.commerce, live.current.queue, id, `ONLINE-COUPON-${randomUUID()}`);
     if (!result.reason) replace({ ...live.current, commerce: result.state });
@@ -184,7 +187,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [replace]);
   const alerts = useCallback((enabled: boolean) => replace({ ...live.current, alertsEnabled: enabled }), [replace]);
   const reset = useCallback(() => { if (adminGate.unlocked) replace(createAppState()); }, [replace]);
-  return <Context.Provider value={{ state, now, ready, admin, setAdminPin, unlockAdmin, lockAdmin, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
+  return <Context.Provider value={{ state, now, ready, admin, setAdminPin, unlockAdmin, lockAdmin, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, visitLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
 }
 export function useDemo() {
   const value = useContext(Context);

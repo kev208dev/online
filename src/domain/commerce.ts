@@ -51,6 +51,13 @@ export function moveStop(state: CommerceState, storeId: StoreId, delta: -1 | 1):
   return { ...state, stops };
 }
 
+export function toggleVisited(state: CommerceState, storeId: StoreId): CommerceState {
+  if (!state.stops.includes(storeId)) return state;
+  return { ...state, visited: state.visited.includes(storeId)
+    ? state.visited.filter((id) => id !== storeId)
+    : [...state.visited, storeId] };
+}
+
 export function issueCoupon(state: CommerceState, queue: QueueState, storeId: StoreId, rawCode: string, now = Date.now()): CommerceChange {
   const reason = eligibility(queue, storeId);
   if (reason) return { state, reason };

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useTabBarMetrics } from '../components/tabBarMetrics';
 import { Button, Chip, SectionTitle, StoreCard, UI } from '../components/ui';
 import { BRANCHES } from '../data/branches';
@@ -8,6 +8,13 @@ import { storesForBranch } from '../data/stores';
 import { BRANCH_IDS } from '../domain/queue';
 import { images } from '../design/assets';
 import { useDemo } from '../state/demo';
+
+const branchPhotos = {
+  main: images.sungsimdang,
+  station: images.sungsimdangStation,
+  dcc: images.sungsimdangDcc,
+  lotte: images.sungsimdangLotte,
+};
 
 export default function HomeScreen() {
   const { state, join, selectBranch, cancel } = useDemo();
@@ -24,7 +31,7 @@ export default function HomeScreen() {
 
   return <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ paddingBottom: tab.height + tab.bottom + 36 }}>
     <View style={{ width, height: Math.min(360, width * 0.9), backgroundColor: '#f4ede5' }}>
-      <Image source={selectedId === 'main' ? images.sungsimdang : images.map} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+      <Image source={branchPhotos[selectedId]} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
       <Text style={{ position: 'absolute', right: 18, bottom: 16, color: '#fff', backgroundColor: UI.orange, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 7, fontSize: 12 }}>체험용</Text>
     </View>
     <View style={{ paddingHorizontal: 24, paddingTop: 17, gap: 15 }}>
@@ -51,10 +58,9 @@ export default function HomeScreen() {
         <Pressable onPress={() => setLeaveAllowed(!leaveAllowed)} accessibilityRole="checkbox" accessibilityState={{ checked: leaveAllowed }} style={{ paddingVertical: 4 }}><Text style={{ color: UI.ink, fontSize: 13 }}>{leaveAllowed ? '☑' : '☐'} 현장에서 대기줄 이탈 가능 여부를 확인했어요</Text></Pressable>
         <Button label={`${BRANCHES[selectedId].name} 줄서기`} onPress={() => setMessage(join(selectedId, leaveAllowed) ?? '줄서기를 시작했어요')} />
       </View>}
-      {active && <View style={{ gap: 9 }}>
-        {active.peopleAhead === 0 && <Button label="입장 QR 보기" onPress={() => router.push('/wallet')} />}
-        <Button label="내 방문 일정" secondary onPress={() => router.push('/schedule')} />
-        <Text onPress={() => { cancel(); setMessage('줄서기를 취소했어요'); }} style={{ color: UI.muted, textDecorationLine: 'underline', textAlign: 'center', paddingVertical: 7 }}>줄서기 취소</Text>
+      {active && <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 5, paddingVertical: 5 }}>
+        <Text onPress={() => router.push(active.peopleAhead === 0 ? '/wallet' : '/schedule')} style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>{active.peopleAhead === 0 ? '입장 QR 보기 ›' : '내 일정 보기 ›'}</Text>
+        <Text onPress={() => Alert.alert('줄서기 취소', '이 기기의 줄서기를 취소할까요?', [{ text: '아니요', style: 'cancel' }, { text: '취소하기', style: 'destructive', onPress: () => { cancel(); setMessage('줄서기를 취소했어요'); } }])} style={{ color: UI.muted, textDecorationLine: 'underline' }}>줄서기 취소</Text>
       </View>}
       {wait?.status === 'completed' && <Text style={{ color: UI.orange, fontFamily: 'Pretendard-SemiBold' }}>입장 인증 완료</Text>}
       {!!message && <Text style={{ color: UI.orange, fontSize: 13 }}>{message}</Text>}
