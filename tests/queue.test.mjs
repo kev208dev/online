@@ -57,11 +57,27 @@ test('processing a person ahead works even after total was manually lowered to z
 test('remaining people and estimated time follow the registered wait, not manual total edits', async () => {
   const { createQueueState, setQueueCount, joinQueue, processAhead, selectBranch, estimateQueueWait } = await queueDomain();
   let state = joinQueue(setQueueCount(createQueueState(), 'main', 25), 'main', true, 'ENTRY-ESTIMATE', now).state;
-  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 25, minutes: 75, label: '약 1시간 15분' });
+  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 25, minutes: 7, label: '약 7분' });
   state = selectBranch(setQueueCount(state, 'main', 1), 'dcc');
-  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 25, minutes: 75, label: '약 1시간 15분' });
+  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 25, minutes: 7, label: '약 7분' });
   state = processAhead(state, 'main');
-  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 24, minutes: 72, label: '약 1시간 12분' });
+  assert.deepEqual(estimateQueueWait(state), { peopleAhead: 24, minutes: 6, label: '약 6분' });
+});
+
+test('estimated time follows four people per minute across requested examples', async () => {
+  const { createQueueState, setQueueCount, joinQueue, estimateQueueWait } = await queueDomain();
+  for (const [ahead, minutes, label] of [
+    [40, 10, '약 10분'],
+    [120, 30, '약 30분'],
+    [240, 60, '약 1시간'],
+    [360, 90, '약 1시간 30분'],
+    [480, 120, '약 2시간'],
+    [720, 180, '약 3시간'],
+    [960, 240, '약 4시간'],
+  ]) {
+    const state = joinQueue(setQueueCount(createQueueState(), 'main', ahead), 'main', true, `ENTRY-${ahead}`, now).state;
+    assert.deepEqual(estimateQueueWait(state), { peopleAhead: ahead, minutes, label });
+  }
 });
 
 test('zero people ahead means entry turn rather than a misleading wait estimate', async () => {

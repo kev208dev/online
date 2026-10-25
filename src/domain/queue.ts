@@ -107,13 +107,13 @@ export function peopleAhead(state: QueueState): number {
   return state.wait?.status === 'waiting' ? state.wait.peopleAhead : 0;
 }
 
-// Until a branch supplies measured service pace, show a clearly labeled estimate.
-const ESTIMATED_MINUTES_PER_PERSON = 3;
+// User-specified approximate pace; actual branch service speed is not measured.
+const ESTIMATED_PEOPLE_PER_MINUTE = 4;
 
 export function estimateQueueWait(state: QueueState): { peopleAhead: number; minutes: number; label: string } | null {
   const wait = state.wait;
   if (!wait || wait.status !== 'waiting') return null;
-  const minutes = Math.min(Number.MAX_SAFE_INTEGER, wait.peopleAhead * ESTIMATED_MINUTES_PER_PERSON);
+  const minutes = Math.ceil(wait.peopleAhead / ESTIMATED_PEOPLE_PER_MINUTE);
   if (minutes === 0) return { peopleAhead: 0, minutes: 0, label: '입장 차례' };
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
