@@ -7,7 +7,9 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": false
+      "bundleIdentifier": "com.kev208dev.online",
+      "supportsTablet": false,
+      "appleTeamId": "822CM9WZ7Z"
     },
     "android": {
       "adaptiveIcon": {
@@ -26,6 +28,8 @@
       "expo-router",
       "expo-status-bar",
       "expo-font",
+      ["expo-camera", { "cameraPermission": "시연 쿠폰 QR을 스캔하기 위해 카메라 접근이 필요합니다." }],
+      "expo-notifications",
       ["expo-navigation-bar", { "hidden": true }]
     ],
     "scheme": "online"

@@ -272,6 +272,8 @@ export function Icon({ svg: Svg, style, ...frame }: IconProps) {
  */
 export function Fade({ from, style, ...frame }: Frame & { w: number; h: number; from: 'top' | 'bottom'; style?: StyleProp<ViewStyle> }) {
   const s = useScale();
+  // Let scrolling content remain visible behind the floating iOS glass bar.
+  if (Platform.OS === 'ios' && from === 'bottom') return null;
   return (
     <View pointerEvents="none" style={[frameStyle(s, frame), style]}>
       <LinearGradient

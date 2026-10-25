@@ -26,6 +26,7 @@ export type Store = {
   perk: string;
   address: string;
   hours: string;
+  demoMenu: string;
   coupon: {
     /** Text inside the ticket-shaped badge, e.g. "15%". */
     badge: string;
@@ -58,6 +59,7 @@ export const STORES: Record<StoreId, Store> = {
     perk: '15% 할인 쿠폰',
     address: '대전광역시 중구 중교로 73번길 14',
     hours: '매일 11:00 - 22:00',
+    demoMenu: '디자인 문구 · 생활 소품',
     coupon: {
       badge: '15%',
       title: '지금 방문하면 15% 쿠폰 발급',
@@ -76,6 +78,7 @@ export const STORES: Record<StoreId, Store> = {
     perk: '추가시간 10분 제공',
     address: ADDRESS_TBD,
     hours: HOURS_TBD,
+    demoMenu: '보드게임 이용',
     coupon: waitingCoupon('10분', '추가시간 10분 제공', '추가시간 10분'),
   },
   dadareuda: {
@@ -88,6 +91,7 @@ export const STORES: Record<StoreId, Store> = {
     perk: '음료 한 잔 무료',
     address: '대전광역시 중구 중교로 73번길 6',
     hours: '매일 12:00 - 20:00',
+    demoMenu: '커피 · 차',
     coupon: waitingCoupon('무료', '음료 한 잔 무료'),
     mapPosition: { x: 805, y: 1100 },
   },
@@ -101,6 +105,7 @@ export const STORES: Record<StoreId, Store> = {
     perk: '10% 할인 쿠폰',
     address: ADDRESS_TBD,
     hours: HOURS_TBD,
+    demoMenu: '커피 · 음료',
     coupon: waitingCoupon('10%', '10% 쿠폰 발급', '10% 할인'),
   },
   ajeossi: {
@@ -113,6 +118,7 @@ export const STORES: Record<StoreId, Store> = {
     perk: '캔 음료 하나 무료',
     address: '대전광역시 중구 중앙로 164번길 22-7',
     hours: HOURS_TBD,
+    demoMenu: '돈까스 메뉴',
     coupon: waitingCoupon('무료', '캔 음료 하나 무료'),
     mapPosition: { x: 963, y: 285 },
   },
@@ -127,6 +133,7 @@ export const STORES: Record<StoreId, Store> = {
     perk: '캔 음료 하나 무료',
     address: '대전광역시 중구 중앙로 164번길 22-7',
     hours: HOURS_TBD,
+    demoMenu: '돈까스 메뉴',
     coupon: waitingCoupon('무료', '캔 음료 하나 무료'),
     mapPosition: { x: 963, y: 285 },
   },

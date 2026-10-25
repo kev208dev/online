@@ -4,9 +4,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
 
-import { EntryQrPopup } from '../components/Popups';
 import { TabBar } from '../components/TabBar';
-import { WaitingProvider } from '../state/waiting';
+import { DemoProvider } from '../state/demo';
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -19,7 +18,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <WaitingProvider>
+    <DemoProvider>
       <View style={{ flex: 1, backgroundColor: '#ffffff' }}>
         <StatusBar style="dark" />
         {/* The Figma frames have no Android navigation bar; swipe up to reveal it. */}
@@ -30,10 +29,14 @@ export default function RootLayout() {
           <Stack.Screen name="search/index" options={{ animation: 'none' }} />
           <Stack.Screen name="search/nearby" />
           <Stack.Screen name="search/detail" />
+          <Stack.Screen name="schedule" options={{ animation: 'none' }} />
+          <Stack.Screen name="settings" options={{ animation: 'none' }} />
+          <Stack.Screen name="wallet" />
+          <Stack.Screen name="merchant" />
+          <Stack.Screen name="merchant-scanner" />
         </Stack>
         <TabBar />
-        <EntryQrPopup />
       </View>
-    </WaitingProvider>
+    </DemoProvider>
   );
 }
