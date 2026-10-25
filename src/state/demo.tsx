@@ -5,12 +5,18 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useR
 import {
   addStop, endWait, issueCoupon, moveStop, redeemCoupon, removeStop,
   selectCurrentStore, startWait, toggleVisited, updateOffer,
-  updateProfile, type Change, type DemoState, type StoreKey, type StoreProfile,
+  updateProfile, type Change, type StoreKey, type StoreProfile,
 } from '../domain/demo';
 import {
   cancelQueue, joinQueue, processAhead, selectBranch, setQueueCount, verifyEntry,
   type BranchId,
 } from '../domain/queue';
+import {
+  addStop as addLocalStop, expireCoupons, issueCoupon as issueLocalCoupon,
+  moveStop as moveLocalStop, redeemCoupon as redeemLocalCoupon, removeStop as removeLocalStop,
+  type CommerceChange,
+} from '../domain/commerce';
+import type { StoreId } from '../data/storeCatalog';
 import { notifyQueueAdvance } from '../notifications/reminders';
 import { createAppState, createLocalQueueRepository, type AppState } from './queueRepository';
 
@@ -25,6 +31,11 @@ type Api = {
   advance: (branchId: BranchId) => void;
   cancel: () => void;
   verifyEntry: (branchId: BranchId, code: string) => string | undefined;
+  addLocal: (id: StoreId) => string | undefined;
+  removeLocal: (id: StoreId) => void;
+  moveLocal: (id: StoreId, delta: -1 | 1) => void;
+  issueLocal: (id: StoreId) => CommerceChange;
+  redeemLocal: (id: StoreId, code: string) => string | undefined;
   start: (minutes: number, leaveAllowed: boolean) => string | undefined;
   finish: () => void;
   add: (id: StoreKey) => string | undefined;
@@ -83,10 +94,33 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     replace({ ...live.current, queue: next });
     if (live.current.alertsEnabled) void notifyQueueAdvance(next, before).catch(() => {});
   }, [replace]);
-  const cancel = useCallback(() => replace({ ...live.current, queue: cancelQueue(live.current.queue) }), [replace]);
+  const cancel = useCallback(() => {
+    const waitId = live.current.queue.wait?.id;
+    replace({ ...live.current, queue: cancelQueue(live.current.queue), commerce: waitId ? expireCoupons(live.current.commerce, waitId) : live.current.commerce });
+  }, [replace]);
   const verifyEntryCode = useCallback((branchId: BranchId, code: string) => {
     const result = verifyEntry(live.current.queue, branchId, code);
-    if (!result.reason) replace({ ...live.current, queue: result.state });
+    if (!result.reason) {
+      const waitId = live.current.queue.wait?.id;
+      replace({ ...live.current, queue: result.state, commerce: waitId ? expireCoupons(live.current.commerce, waitId) : live.current.commerce });
+    }
+    return result.reason;
+  }, [replace]);
+  const addLocal = useCallback((id: StoreId) => {
+    const result = addLocalStop(live.current.commerce, live.current.queue, id);
+    if (!result.reason) replace({ ...live.current, commerce: result.state });
+    return result.reason;
+  }, [replace]);
+  const removeLocal = useCallback((id: StoreId) => replace({ ...live.current, commerce: removeLocalStop(live.current.commerce, id) }), [replace]);
+  const moveLocal = useCallback((id: StoreId, delta: -1 | 1) => replace({ ...live.current, commerce: moveLocalStop(live.current.commerce, id, delta) }), [replace]);
+  const issueLocal = useCallback((id: StoreId) => {
+    const result = issueLocalCoupon(live.current.commerce, live.current.queue, id, `ONLINE-COUPON-${randomUUID()}`);
+    if (!result.reason) replace({ ...live.current, commerce: result.state });
+    return result;
+  }, [replace]);
+  const redeemLocal = useCallback((id: StoreId, code: string) => {
+    const result = redeemLocalCoupon(live.current.commerce, id, code);
+    if (!result.reason) replace({ ...live.current, commerce: result.state });
     return result.reason;
   }, [replace]);
   const start = useCallback((minutes: number, leaveAllowed: boolean) => {
@@ -118,7 +152,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const profile = useCallback((id: StoreKey, value: StoreProfile) => replace(updateProfile(live.current, id, value) as AppState), [replace]);
   const alerts = useCallback((enabled: boolean) => replace({ ...live.current, alertsEnabled: enabled }), [replace]);
   const reset = useCallback(() => replace(createAppState()), [replace]);
-  return <Context.Provider value={{ state, now, ready, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
+  return <Context.Provider value={{ state, now, ready, join, selectBranch: chooseBranch, setCount, advance, cancel, verifyEntry: verifyEntryCode, addLocal, removeLocal, moveLocal, issueLocal, redeemLocal, start, finish, add, remove, move, visit, current, issue, redeem, offer, profile, alerts, reset }}>{ready ? children : <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#f47738" /></View>}</Context.Provider>;
 }
 export function useDemo() {
   const value = useContext(Context);

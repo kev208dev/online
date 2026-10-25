@@ -9,13 +9,16 @@ import type { ComponentType } from 'react';
 import type { SvgProps } from 'react-native-svg';
 
 import { icons, images } from '../design/assets';
+import { STORE_CATALOG, storesForBranch as catalogForBranch, type StoreId } from './storeCatalog';
+import type { BranchId } from '../domain/queue';
 
-export type StoreId = 'madeby' | 'redbutton' | 'dadareuda' | 'modif' | 'ajeossi' | 'ajeossi2';
+export type { StoreId } from './storeCatalog';
 
 export type Category = '소품샵' | '카페' | '식당' | '기타';
 
 export type Store = {
   id: StoreId;
+  branchId: BranchId;
   name: string;
   image: number;
   category: Category;
@@ -48,9 +51,10 @@ function waitingCoupon(badge: string, perk: string, popupPerk = perk) {
   return { badge, title: `지금 방문하면 ${perk}`, condition: WAITING, popup: `${WAITING} ${popupPerk}` };
 }
 
-export const STORES: Record<StoreId, Store> = {
+const STORE_DESIGNS: Record<StoreId, Store> = {
   madeby: {
     id: 'madeby',
+    branchId: 'main',
     name: '메이드바이 대전',
     image: images.madeby,
     category: '소품샵',
@@ -70,6 +74,7 @@ export const STORES: Record<StoreId, Store> = {
   },
   redbutton: {
     id: 'redbutton',
+    branchId: 'main',
     name: '레드버튼 대전은행점',
     image: images.redbutton,
     category: '기타',
@@ -83,6 +88,7 @@ export const STORES: Record<StoreId, Store> = {
   },
   dadareuda: {
     id: 'dadareuda',
+    branchId: 'main',
     name: '다다르다',
     image: images.dadareuda,
     category: '카페',
@@ -97,6 +103,7 @@ export const STORES: Record<StoreId, Store> = {
   },
   modif: {
     id: 'modif',
+    branchId: 'main',
     name: '모디프 커피',
     image: images.modif,
     category: '카페',
@@ -110,6 +117,7 @@ export const STORES: Record<StoreId, Store> = {
   },
   ajeossi: {
     id: 'ajeossi',
+    branchId: 'main',
     name: '아저씨 돈까스',
     image: images.ajeossi,
     category: '식당',
@@ -122,22 +130,34 @@ export const STORES: Record<StoreId, Store> = {
     coupon: waitingCoupon('무료', '캔 음료 하나 무료'),
     mapPosition: { x: 963, y: 285 },
   },
-  // The Figma list repeats 아저씨 돈까스 with another photo and "카페".
-  ajeossi2: {
-    id: 'ajeossi2',
-    name: '아저씨 돈까스',
-    image: images.ajeossi2,
-    category: '카페',
-    walkMinutes: 5,
-    stay: '30~45분',
-    perk: '캔 음료 하나 무료',
-    address: '대전광역시 중구 중앙로 164번길 22-7',
-    hours: HOURS_TBD,
-    demoMenu: '돈까스 메뉴',
-    coupon: waitingCoupon('무료', '캔 음료 하나 무료'),
-    mapPosition: { x: 963, y: 285 },
-  },
+  ...Object.fromEntries((['cafejosun', 'andorin', 'cafe042', 'occalguksu', 'dosolo', 'ruinh'] as StoreId[]).map((id) => {
+    const listing = STORE_CATALOG[id];
+    const store: Store = {
+      ...listing,
+      image: images.map,
+      stay: `${listing.stayMinutes}분 내외`,
+      perk: '체험용 방문 쿠폰',
+      hours: HOURS_TBD,
+      demoMenu: listing.category === '식당' ? '식사' : '음료',
+      coupon: { badge: '체험', title: '앱 내 방문 쿠폰', condition: '실제 할인 없음', popup: '앱 내 인증 전용' },
+    };
+    return [id, store];
+  })) as Record<'cafejosun' | 'andorin' | 'cafe042' | 'occalguksu' | 'dosolo' | 'ruinh', Store>,
 };
+
+// Local shops are discovery examples, not contracted partners. Keep the
+// Figma imagery but suppress its unverified discount claims in customer UI.
+export const STORES: Record<StoreId, Store> = Object.fromEntries(
+  (Object.keys(STORE_DESIGNS) as StoreId[]).map((id) => [id, {
+    ...STORE_DESIGNS[id],
+    perk: '체험용 방문 쿠폰',
+    coupon: { badge: '체험', title: '앱 내 방문 쿠폰', condition: '실제 할인 없음', popup: '앱 내 인증 전용' },
+  }]),
+) as Record<StoreId, Store>;
+
+export function storesForBranch(branchId: BranchId): Store[] {
+  return catalogForBranch(branchId).map((listing) => STORES[listing.id]);
+}
 
 export function getStore(id: string | string[] | undefined): Store {
   const key = Array.isArray(id) ? id[0] : id;

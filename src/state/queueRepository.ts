@@ -1,7 +1,9 @@
 import { createInitialState, INITIAL_OFFERS, STORE_KEYS, type DemoState } from '../domain/demo.ts';
 import { BRANCH_IDS, createQueueState, type BranchId, type QueueState, type WaitSession } from '../domain/queue.ts';
+import { createCommerceState, type CommerceState } from '../domain/commerce.ts';
+import { STORE_IDS, type StoreId } from '../data/storeCatalog.ts';
 
-export type AppState = DemoState & { queue: QueueState };
+export type AppState = DemoState & { queue: QueueState; commerce: CommerceState };
 export type QueueRepository = {
   load: () => Promise<AppState>;
   save: (state: AppState) => Promise<void>;
@@ -15,7 +17,20 @@ const V1_KEY = 'online-demo-v1';
 const V2_KEY = 'online-queue-v2';
 
 export function createAppState(): AppState {
-  return { ...createInitialState(), wait: null, queue: createQueueState() };
+  return { ...createInitialState(), wait: null, queue: createQueueState(), commerce: createCommerceState() };
+}
+
+function restoreCommerce(value: unknown): CommerceState {
+  const initial = createCommerceState();
+  if (!value || typeof value !== 'object') return initial;
+  const raw = value as Partial<CommerceState>;
+  const validStore = (id: unknown): id is StoreId => typeof id === 'string' && (STORE_IDS as string[]).includes(id);
+  const stops = Array.isArray(raw.stops) ? raw.stops.filter(validStore) : [];
+  return {
+    stops,
+    visited: Array.isArray(raw.visited) ? raw.visited.filter((id): id is StoreId => validStore(id) && stops.includes(id)) : [],
+    coupons: Array.isArray(raw.coupons) ? raw.coupons.filter((coupon) => coupon && validStore(coupon.storeId) && typeof coupon.code === 'string' && typeof coupon.waitId === 'string' && Number.isFinite(coupon.expiresAt)) : [],
+  };
 }
 
 function isBranchId(value: unknown): value is BranchId {
@@ -75,6 +90,7 @@ export function restoreAppState(raw: string | null, now = Date.now()): AppState 
       visited: oldVersion ? [] : Array.isArray(saved.visited) ? saved.visited.filter((id: unknown) => stops.includes(id)) : [],
       currentStoreId: oldVersion ? null : stops.includes(saved.currentStoreId) ? saved.currentStoreId : null,
       queue: oldVersion ? createQueueState() : restoreQueue(saved.queue),
+      commerce: oldVersion ? createCommerceState() : restoreCommerce(saved.commerce),
     };
   } catch {
     return initial;

@@ -79,3 +79,20 @@ test('repository serializes consecutive saves so the newest state wins', async (
   await Promise.all([local.save(first), local.save(second)]);
   assert.equal((await local.load()).queue.selectedBranchId, 'lotte');
 });
+
+test('local shop plan and coupon survive restart without crossing branches', async () => {
+  const { repository, queue } = await modules();
+  const commerce = await import('../src/domain/commerce.ts');
+  const storage = memoryStorage();
+  const local = repository.createLocalQueueRepository(storage, () => now);
+  const base = repository.createAppState();
+  const registered = queue.joinQueue(queue.setQueueCount(base.queue, 'station', 2), 'station', true, 'ENTRY', now).state;
+  const planned = commerce.addStop(base.commerce, registered, 'cafejosun').state;
+  const issued = commerce.issueCoupon(planned, registered, 'cafejosun', 'COUPON', now).state;
+  await local.save({ ...base, queue: queue.selectBranch(registered, 'main'), commerce: issued });
+  const loaded = await local.load();
+  assert.deepEqual(loaded.commerce.stops, ['cafejosun']);
+  assert.equal(loaded.commerce.coupons[0].storeId, 'cafejosun');
+  assert.equal(loaded.queue.wait.branchId, 'station');
+  assert.equal(loaded.queue.selectedBranchId, 'main');
+});
