@@ -1,0 +1,101 @@
+import { createInitialState, INITIAL_OFFERS, STORE_KEYS, type DemoState } from '../domain/demo.ts';
+import { BRANCH_IDS, createQueueState, type BranchId, type QueueState, type WaitSession } from '../domain/queue.ts';
+
+export type AppState = DemoState & { queue: QueueState };
+export type QueueRepository = {
+  load: () => Promise<AppState>;
+  save: (state: AppState) => Promise<void>;
+};
+export type KeyValueStorage = {
+  getItem: (key: string) => Promise<string | null>;
+  setItem: (key: string, value: string) => Promise<void>;
+};
+
+const V1_KEY = 'online-demo-v1';
+const V2_KEY = 'online-queue-v2';
+
+export function createAppState(): AppState {
+  return { ...createInitialState(), wait: null, queue: createQueueState() };
+}
+
+function isBranchId(value: unknown): value is BranchId {
+  return typeof value === 'string' && (BRANCH_IDS as readonly string[]).includes(value);
+}
+
+function nonNegative(value: unknown, fallback: number): number {
+  return Number.isSafeInteger(value) && (value as number) >= 0 ? value as number : fallback;
+}
+
+function restoreQueue(value: unknown): QueueState {
+  const initial = createQueueState();
+  if (!value || typeof value !== 'object') return initial;
+  const raw = value as Partial<QueueState>;
+  const queueCounts = { ...initial.queueCounts };
+  const nextTicketNumbers = { ...initial.nextTicketNumbers };
+  for (const id of BRANCH_IDS) {
+    queueCounts[id] = nonNegative(raw.queueCounts?.[id], 0);
+    nextTicketNumbers[id] = Math.max(1, nonNegative(raw.nextTicketNumbers?.[id], 1));
+  }
+  const candidate = raw.wait as Partial<WaitSession> | null | undefined;
+  const wait = candidate && isBranchId(candidate.branchId)
+    && (candidate.status === 'waiting' || candidate.status === 'completed')
+    && Number.isSafeInteger(candidate.ticketNumber) && (candidate.ticketNumber as number) >= 1
+    && Number.isSafeInteger(candidate.peopleAhead) && (candidate.peopleAhead as number) >= 0
+    && typeof candidate.entryCode === 'string' && candidate.entryCode.length > 0
+    && typeof candidate.id === 'string' && typeof candidate.startedAt === 'number'
+    ? candidate as WaitSession : null;
+  return {
+    selectedBranchId: isBranchId(raw.selectedBranchId) ? raw.selectedBranchId : 'main',
+    queueCounts,
+    nextTicketNumbers,
+    wait,
+    usedEntryCodes: Array.isArray(raw.usedEntryCodes) ? raw.usedEntryCodes.filter((code): code is string => typeof code === 'string') : [],
+  };
+}
+
+export function restoreAppState(raw: string | null, now = Date.now()): AppState {
+  const initial = createAppState();
+  if (!raw) return initial;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed?.version !== 1 && parsed?.version !== 2) return initial;
+    const saved = parsed.state;
+    if (!saved || typeof saved !== 'object') return initial;
+    const oldVersion = parsed.version === 1;
+    const coupons = Array.isArray(saved.coupons) ? saved.coupons.map((coupon: DemoState['coupons'][number]) => oldVersion && coupon?.usedAt === undefined
+      ? { ...coupon, expiresAt: Math.min(nonNegative(coupon?.expiresAt, now), now) } : coupon) : [];
+    const stops = oldVersion ? [] : Array.isArray(saved.stops) ? saved.stops.filter((id: unknown) => STORE_KEYS.includes(id as DemoState['stops'][number])) : [];
+    return {
+      ...initial,
+      coupons,
+      offers: { ...INITIAL_OFFERS, ...(saved.offers && typeof saved.offers === 'object' ? saved.offers : {}) },
+      profiles: saved.profiles && typeof saved.profiles === 'object' ? saved.profiles : {},
+      alertsEnabled: saved.alertsEnabled === true,
+      stops,
+      visited: oldVersion ? [] : Array.isArray(saved.visited) ? saved.visited.filter((id: unknown) => stops.includes(id)) : [],
+      currentStoreId: oldVersion ? null : stops.includes(saved.currentStoreId) ? saved.currentStoreId : null,
+      queue: oldVersion ? createQueueState() : restoreQueue(saved.queue),
+    };
+  } catch {
+    return initial;
+  }
+}
+
+export function serializeAppState(state: AppState): string {
+  return JSON.stringify({ version: 2, state: { ...state, wait: null } });
+}
+
+export function createLocalQueueRepository(storage: KeyValueStorage, clock = Date.now): QueueRepository {
+  let writeQueue = Promise.resolve();
+  return {
+    async load() {
+      const current = await storage.getItem(V2_KEY);
+      return restoreAppState(current ?? await storage.getItem(V1_KEY), clock());
+    },
+    save(state) {
+      const serialized = serializeAppState(state);
+      writeQueue = writeQueue.catch(() => {}).then(() => storage.setItem(V2_KEY, serialized));
+      return writeQueue;
+    },
+  };
+}

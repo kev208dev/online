@@ -1,9 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { AndroidImportance } from 'expo-notifications';
 import { Platform } from 'react-native';
-import { reminderAt, type DemoState } from '../domain/demo';
+import type { QueueState } from '../domain/queue';
 
-const IDENTIFIER = 'online-return-reminder';
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
@@ -13,26 +12,26 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export async function syncReminder(state: DemoState) {
-  await Notifications.cancelScheduledNotificationAsync(IDENTIFIER);
-  if (!state.alertsEnabled || !state.wait) return;
-  const when = reminderAt(state);
-  if (!when || when <= Date.now()) return;
+export async function notifyQueueAdvance(state: QueueState, previousAhead: number | undefined) {
+  const wait = state.wait;
+  if (!wait || wait.status !== 'waiting' || previousAhead === undefined) return;
+  const called = previousAhead > 0 && wait.peopleAhead === 0;
+  const returnSoon = previousAhead > 3 && wait.peopleAhead <= 3;
+  if (!called && !returnSoon) return;
   const permissions = await Notifications.getPermissionsAsync();
   if (!permissions.granted) return;
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('online-return', {
-      name: '복귀 안내',
+    await Notifications.setNotificationChannelAsync('online-queue', {
+      name: '줄서기 안내',
       importance: AndroidImportance.HIGH,
     });
   }
   await Notifications.scheduleNotificationAsync({
-    identifier: IDENTIFIER,
     content: {
-      title: '성심당 본점으로 돌아갈 시간이에요',
-      body: '직접 입력한 예상 대기시간 기준입니다. 매장의 실제 순서를 확인해 주세요.',
-      data: { kind: 'return-reminder' },
+      title: called ? '입장할 차례예요' : '매장으로 돌아갈 준비를 해주세요',
+      body: called ? '앱의 입장 QR을 확인해 주세요.' : `앞에 ${wait.peopleAhead}명이 남았어요.`,
+      data: { kind: 'queue-advance', branchId: wait.branchId },
     },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(when), ...(Platform.OS === 'android' ? { channelId: 'online-return' } : {}) },
+    trigger: null,
   });
 }
